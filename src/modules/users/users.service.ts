@@ -3,22 +3,11 @@ import { Prisma } from '../../generated/prisma/client.js';
 
 import { PrismaService } from '../prisma/prisma.service.js';
 import type { UserQueryDto } from './dto/user-query.dto.js';
-import type { UserResponse } from './entities/user.response.js';
+import type { PaginatedUsers } from './entities/user.response.js';
 import { toUserResponse } from './entities/user.response.js';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
-
-/** Listagem paginada de usuários. */
-export interface PaginatedUsers {
-  data: UserResponse[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
 
 /**
  * Consulta de usuários.

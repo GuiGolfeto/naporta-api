@@ -5,24 +5,27 @@ import { type Role } from '../../../generated/prisma/client.js';
  *
  * Nunca inclui `passwordHash` — a conversão é sempre por este tipo, o que
  * impede vazamento acidental do hash.
+ *
+ * Classe (e não interface) para que o plugin do `@nestjs/swagger` gere o
+ * schema OpenAPI.
  */
-export interface AuthUser {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  isActive: boolean;
-  createdAt: Date;
+export class AuthUser {
+  id!: string;
+  name!: string;
+  email!: string;
+  role!: Role;
+  isActive!: boolean;
+  createdAt!: Date;
 }
 
 /** Resultado de uma autenticação bem-sucedida. */
-export interface AuthSession {
-  user: AuthUser;
-  accessToken: string;
-  refreshToken: string;
-  tokenType: 'Bearer';
+export class AuthSession {
+  user!: AuthUser;
+  accessToken!: string;
+  refreshToken!: string;
+  tokenType!: 'Bearer';
   /** Validade do access token, em segundos. */
-  expiresIn: number;
+  expiresIn!: number;
 }
 
 /** Contexto da requisição, usado para auditoria dos tokens. */

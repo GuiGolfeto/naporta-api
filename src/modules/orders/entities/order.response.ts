@@ -8,46 +8,71 @@ export type OrderWithRelations = Order & {
   createdBy: Pick<User, 'id' | 'name'>;
 };
 
-/** Item do pedido na resposta da API. */
-export interface OrderItemResponse {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
+/**
+ * Item do pedido na resposta da API.
+ *
+ * É uma **classe** (e não uma interface) para que o plugin do
+ * `@nestjs/swagger` gere o schema OpenAPI a partir dos tipos.
+ */
+export class OrderItemResponse {
+  id!: string;
+  description!: string;
+  quantity!: number;
+  unitPrice!: number;
+  total!: number;
 }
 
 /** Endereço de entrega na resposta da API. */
-export interface OrderAddressResponse {
-  street: string;
-  number: string;
-  complement: string | null;
-  neighborhood: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
+export class OrderAddressResponse {
+  street!: string;
+  number!: string;
+  complement!: string | null;
+  neighborhood!: string;
+  city!: string;
+  state!: string;
+  zipCode!: string;
+  country!: string;
+}
+
+/** Cliente do pedido na resposta da API. */
+export class OrderCustomerResponse {
+  name!: string;
+  document!: string;
+}
+
+/** Usuário que criou o pedido. */
+export class OrderOwnerResponse {
+  id!: string;
+  name!: string;
 }
 
 /** Pedido na resposta da API. */
-export interface OrderResponse {
-  id: string;
-  number: string;
-  status: OrderStatus;
-  expectedDeliveryDate: string;
-  customer: {
-    name: string;
-    document: string;
-  };
-  address: OrderAddressResponse | null;
-  items: OrderItemResponse[];
-  total: number;
-  createdBy: {
-    id: string;
-    name: string;
-  };
-  createdAt: string;
-  updatedAt: string;
+export class OrderResponse {
+  id!: string;
+  number!: string;
+  status!: OrderStatus;
+  expectedDeliveryDate!: string;
+  customer!: OrderCustomerResponse;
+  address!: OrderAddressResponse | null;
+  items!: OrderItemResponse[];
+  total!: number;
+  createdBy!: OrderOwnerResponse;
+  createdAt!: string;
+  updatedAt!: string;
+}
+
+/** Metainformação de paginação. */
+export class PaginationMeta {
+  total!: number;
+  page!: number;
+  limit!: number;
+  totalPages!: number;
+}
+
+/** Página de pedidos. */
+export class PaginatedOrders {
+  data!: OrderResponse[];
+  meta!: PaginationMeta;
 }
 
 /**

@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
-import type { AuthSession, AuthUser, RequestContext } from './entities/auth-user.js';
+import type { AuthSession, AuthUser, RequestContext } from './entities/auth-user.entity.js';
 import { PasswordService } from './password/password.service.js';
 import { TokenService } from './tokens/token.service.js';
 

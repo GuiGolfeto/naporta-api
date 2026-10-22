@@ -1,10 +1,75 @@
 # naPorta API
 
-Web API da **naPorta** para gestão de pedidos de entrega, construída com NestJS, Prisma e PostgreSQL.
+Web API da **naPorta** para gestão de pedidos de entrega — NestJS, Prisma e PostgreSQL, com
+autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de produção.
 
-> **Status do projeto:** Módulos 0 a 4 concluídos — fundação, camada de dados, autenticação,
-> CRUD de pedidos e seed. A API já atende o escopo do desafio: pedidos com criação, listagem
-> filtrada, edição e exclusão lógica, protegidos por JWT.
+> **Escopo do desafio:** pedidos com criação, listagem filtrável, edição e exclusão lógica,
+> com autenticação por Bearer token, banco relacional, ORM, seed e documentação.
+
+|                             |                                                               |
+| --------------------------- | ------------------------------------------------------------- |
+| **Documentação interativa** | http://localhost:3000/docs (Swagger UI)                       |
+| **Health check**            | http://localhost:3000/api/v1/health                           |
+| **Testes**                  | 64 unitários · 89 e2e · cobertura de 78% (pisos configurados) |
+| **Imagem Docker**           | 179 MB, usuário sem privilégios, health check                 |
+
+---
+
+## Sumário
+
+- [Como avaliar em 5 minutos](#como-avaliar-em-5-minutos)
+- [Stack](#stack)
+- [Como executar](#como-executar)
+- [Arquitetura](#arquitetura)
+- [API](#api)
+- [Autenticação e segurança](#autenticação-e-segurança)
+- [Pedidos](#pedidos)
+- [Dados de demonstração (seed)](#dados-de-demonstração-seed)
+- [Modelo de dados](#modelo-de-dados)
+- [Testes](#testes)
+- [Docker](#docker)
+- [Variáveis de ambiente](#variáveis-de-ambiente)
+- [Decisões e justificativas](#decisões-e-justificativas)
+- [Limitações conhecidas e próximos passos](#limitações-conhecidas-e-próximos-passos)
+
+---
+
+## Como avaliar em 5 minutos
+
+```bash
+# 1) sobe a stack completa (banco + migrations + API)
+docker compose up -d --build
+
+# 2) popula o banco com dados fictícios
+docker compose exec -T api npm run seed
+#   (ou, sem Docker: npm run seed)
+
+# 3) autentica e cria um pedido
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@naporta.local","password":"Admin@1234"}' | jq -r .accessToken)
+
+curl -s -X POST http://localhost:3000/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"expectedDeliveryDate":"2026-12-25","customerName":"Maria Silva",
+       "customerDocument":"11144477735",
+       "address":{"street":"Rua das Flores","number":"123","neighborhood":"Centro",
+                  "city":"São Paulo","state":"SP","zipCode":"01001000"},
+       "items":[{"description":"Caixa de papelão","quantity":2,"unitPrice":49.90}]}' | jq
+
+# 4) filtra e pagina
+curl -s "http://localhost:3000/api/v1/orders?status=PENDING&page=1&limit=5" \
+  -H "Authorization: Bearer $TOKEN" | jq '.meta'
+```
+
+| O que olhar                                     | Onde                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Documentação interativa com o botão "Authorize" | http://localhost:3000/docs                                                                        |
+| Exclusão lógica (a linha continua no banco)     | `docker compose exec -T db psql -U naporta -d naporta -c "select number, deleted_at from orders"` |
+| Suíte completa                                  | `npm run test:all`                                                                                |
+| Decisões técnicas                               | [Decisões e justificativas](#decisões-e-justificativas)                                           |
+
+**Credenciais da seed:** `admin@naporta.local / Admin@1234` (ADMIN) · `operador@naporta.local / Operador@1234` (USER).
 
 ---
 
@@ -20,7 +85,9 @@ Web API da **naPorta** para gestão de pedidos de entrega, construída com NestJ
 | Testes            | Vitest 5 (unit + e2e com Supertest)                        |
 | Lint / Formatação | ESLint 10 (flat config, com type-checking) + Prettier 3    |
 | Logs              | nestjs-pino (JSON em produção, legível em desenvolvimento) |
-| Documentação      | OpenAPI / Swagger (Módulo 7)                               |
+| Documentação      | OpenAPI 3 / Swagger UI em `/docs`                          |
+| Autenticação      | JWT (HS256) + refresh rotativo, senhas com argon2id        |
+| Docker            | Imagem multi-stage, usuário sem privilégios, health check  |
 
 ---
 
@@ -220,7 +287,98 @@ Em `production`, `DATABASE_URL`, `JWT_SECRET` e `JWT_REFRESH_SECRET` são **obri
 
 ---
 
-## Autenticação
+## Arquitetura
+
+Organização em **módulos** do Nest, cada um com seu domínio, e camadas transversais em `common/`:
+
+```mermaid
+flowchart LR
+    subgraph Cliente
+        Portal["Portal web / cliente"]
+    end
+
+    subgraph API["API (NestJS)"]
+        direction TB
+        MW["Middleware<br/>helmet · CORS · trust proxy"]
+        Guards["Guards globais<br/>Throttler · JWT · Roles"]
+        Pipes["ValidationPipe<br/>whitelist · 422"]
+        Modules["Módulos<br/>auth · orders · users · health"]
+        Repo["PrismaService<br/>+ extensão de soft delete"]
+        Filter["Filtro de exceções<br/>contrato único de erro"]
+        Modules --> Repo
+    end
+
+    subgraph Dados
+        DB[("PostgreSQL 16")]
+    end
+
+    Portal --> MW --> Guards --> Pipes --> Modules
+    Modules -.-> Filter
+    Modules --> Repo --> DB
+```
+
+O caminho de uma requisição é sempre o mesmo:
+
+1. **Middleware** — `helmet` (headers de segurança), CORS por whitelist, `trust proxy`;
+2. **Guards globais** — rate limit → autenticação (Bearer) → autorização por papel;
+3. **Pipes** — validação dos DTOs (`whitelist` + `forbidNonWhitelisted` → `422`);
+4. **Controller** — apenas HTTP (parsing e delegação);
+5. **Service** — regras de negócio, autorização por ownership e transações;
+6. **Prisma** — acesso a dados, com a extensão de soft delete aplicada;
+7. **Filtro global** — qualquer erro vira o mesmo formato de resposta.
+
+Decisões de organização:
+
+| Tema                                       | Escolha                                         | Por quê                                                                                                        |
+| ------------------------------------------ | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Módulos**                                | `src/modules/{auth,orders,users,health,prisma}` | Cada domínio tem seu controller e service; o de pedidos não depende do de autenticação além do tipo do usuário |
+| **Composição em vez de herança no Prisma** | `PrismaService.client`                          | A extensão do Prisma 7 devolve um objeto novo; herdar exigiria `as unknown as` e perderia a segurança de tipos |
+| **Guards globais**                         | `APP_GUARD`                                     | Política _secure by default_: rota nova já nasce protegida                                                     |
+| **DTOs**                                   | Um arquivo por payload, com validação           | O DTO é a fonte da verdade da validação **e** da documentação (o OpenAPI é gerado do mesmo código)             |
+| **Erros**                                  | Filtro global + mapper do Prisma                | Nenhuma rota devolve um formato diferente de erro                                                              |
+| **Respostas**                              | Mapper `toXResponse()`                          | A API nunca expõe o modelo do banco: `Decimal` vira `number`, `DATE` vira `YYYY-MM-DD`                         |
+
+---
+
+## API
+
+Todos os endpoints exigem `Authorization: Bearer <accessToken>`, **exceto** os marcados como públicos.
+A documentação completa, com exemplos e botão "Authorize", está em **http://localhost:3000/docs**.
+
+| Método   | Rota                    | Público | Descrição                                   |
+| -------- | ----------------------- | ------- | ------------------------------------------- |
+| `POST`   | `/api/v1/auth/register` | sim     | Cria a conta e devolve a sessão inicial     |
+| `POST`   | `/api/v1/auth/login`    | sim     | Autentica e devolve access + refresh token  |
+| `POST`   | `/api/v1/auth/refresh`  | sim     | Renova a sessão (rotaciona o refresh token) |
+| `POST`   | `/api/v1/auth/logout`   | não     | Revoga o refresh token informado            |
+| `GET`    | `/api/v1/auth/me`       | não     | Dados do usuário autenticado                |
+| `POST`   | `/api/v1/orders`        | não     | Cria um pedido                              |
+| `GET`    | `/api/v1/orders`        | não     | Lista pedidos (filtros + paginação)         |
+| `GET`    | `/api/v1/orders/:id`    | não     | Detalha um pedido                           |
+| `PATCH`  | `/api/v1/orders/:id`    | não     | Atualiza um pedido                          |
+| `DELETE` | `/api/v1/orders/:id`    | não     | Exclui um pedido (exclusão lógica)          |
+| `GET`    | `/api/v1/users`         | não     | Lista usuários — **somente `ADMIN`**        |
+| `GET`    | `/api/v1/health`        | sim     | Liveness                                    |
+| `GET`    | `/api/v1/health/ready`  | sim     | Readiness (verifica o banco)                |
+
+### Documentação OpenAPI
+
+O Swagger UI fica em **`/docs`** e o documento bruto em **`/docs-json`**.
+
+- Os **schemas** vêm do plugin do `@nestjs/swagger` (configurado no `nest-cli.json`), que lê os
+  tipos e os comentários do código — a documentação acompanha a validação real da API, sem
+  divergir;
+- As **descrições** dos endpoints e dos campos saem dos JSDoc;
+- O botão **"Authorize"** usa o token obtido em `POST /api/v1/auth/login`;
+- `persistAuthorization` guarda o token entre as requisições feitas na própria UI.
+
+> O plugin roda no compilador do Nest CLI (`nest build` / `nest start`). No contexto do Vitest
+> (compilação por SWC) ele não é aplicado — por isso o teste de OpenAPI verifica a _presença_
+> dos schemas, e não as suas propriedades.
+
+---
+
+## Autenticação e segurança
 
 Todos os endpoints exigem `Authorization: Bearer <accessToken>`, **exceto** os marcados como
 públicos (`/auth/register`, `/auth/login`, `/auth/refresh` e os health checks). A política é
@@ -548,22 +706,73 @@ test/                            # testes e2e e de integração
 
 ---
 
-## Decisões técnicas (resumo)
+## Decisões e justificativas
 
-| Tema                      | Decisão                                                                              | Por quê                                                                                                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ESM**                   | Projeto em ESM (`"type": "module"`)                                                  | O ecossistema NestJS 12 (`@nestjs/config` v12, `@nestjs/terminus` v12) é ESM-first; manter CommonJS exigiria versões antigas dos pacotes.               |
-| **Prisma 7**              | Client gerado como TypeScript em `src/generated/prisma`                              | Sem engine binário (client "Rust-free"), mais rápido no cold start e com os tipos no repositório. `prisma.config.ts` centraliza URL, migrations e seed. |
-| **TypeScript 6**          | `module: nodenext`, `allowImportingTsExtensions` + `rewriteRelativeImportExtensions` | Imports relativos usam `.js` (padrão ESM/Node) e o client gerado pelo Prisma usa `.ts`, reescrito para `.js` no build.                                  |
-| **Vitest + SWC**          | `unplugin-swc` no lugar do esbuild                                                   | O Nest depende de `emitDecoratorMetadata`, que o esbuild não implementa.                                                                                |
-| **Configuração única**    | `src/app.setup.ts`                                                                   | `main.ts` e o setup dos testes e2e usam o mesmo pipeline — evita divergência entre dev e teste.                                                         |
-| **Validação de ambiente** | Joi no boot                                                                          | Falha rápido e com mensagem clara, em vez de erro em produção.                                                                                          |
-| **Soft delete**           | Extensão do Prisma                                                                   | Registro excluído nunca vaza por uma leitura "esquecida" de filtro, e `delete` nunca apaga a linha fisicamente.                                         |
-| **Número do pedido**      | Upsert atômico no Postgres                                                           | Sem lock explícito: a atomicidade vem do próprio banco (`ON CONFLICT ... RETURNING`).                                                                   |
-| **Dinheiro**              | `Decimal(12,2)` no banco                                                             | Precisão exata; a serialização para `number` acontece na borda (Módulo 3).                                                                              |
-| **IDs**                   | UUID v4                                                                              | Evita IDs sequenciais e, com isso, enumeração de registros.                                                                                             |
+As escolhas que mais definem a solução — e o motivo de cada uma.
 
-A seção completa de decisões e justificativas (com diagramas de arquitetura e ER) entra no **Módulo 7**.
+### Stack e toolchain
+
+| Tema                               | Decisão                                                          | Por quê                                                                                                                                                                |
+| ---------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ESM**                            | Projeto em ESM (`"type": "module"`)                              | O ecossistema NestJS 12 (`@nestjs/config` v12, `@nestjs/terminus` v12) é ESM-first; manter CommonJS exigiria versões antigas dos pacotes, incompatíveis com o Nest 12. |
+| **TypeScript 6.0**                 | `module: nodenext`                                               | Única versão que satisfaz os peers de `@nestjs/schematics` (≥ 6.0) e do `typescript-eslint` (< 6.1).                                                                   |
+| **Prisma 7**                       | Client gerado como TypeScript em `src/generated/prisma`          | Client "Rust-free": sem engine binário, cold start mais rápido e os tipos no repositório. `prisma.config.ts` centraliza URL, migrations e seed.                        |
+| **Imports `.ts` no client gerado** | `allowImportingTsExtensions` + `rewriteRelativeImportExtensions` | O client gerado usa `.ts` nos imports internos; o `tsc` reescreve para `.js` no build (padrão ESM/Node) e o `tsx` (seed) resolve direto.                               |
+| **Vitest + SWC**                   | `unplugin-swc` no lugar do esbuild                               | O Nest depende de `emitDecoratorMetadata`, que o esbuild **não** implementa — sem o SWC, a injeção por tipo quebra em runtime.                                         |
+| **Sem Passport**                   | `JwtAuthGuard` próprio sobre `@nestjs/jwt`                       | Menos dependência, controle total do fluxo de erro e da política _secure by default_.                                                                                  |
+| **Type-check no lint**             | ESLint 10 flat config com `projectService`                       | Regras que só fazem sentido com os tipos (`no-floating-promises`, `no-unsafe-assignment`) passam a ser aplicadas de verdade.                                           |
+
+### Domínio e dados
+
+| Tema                    | Decisão                                                        | Por quê                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Soft delete**         | Extensão do Prisma (`src/modules/prisma/prisma.extensions.ts`) | Registro excluído nunca vaza por uma leitura "esquecida" de filtro, e `delete` **nunca** apaga a linha fisicamente.                               |
+| **Número do pedido**    | Upsert atômico no Postgres (`ON CONFLICT ... RETURNING`)       | Sem lock explícito: a atomicidade vem do banco. Testado com 25 chamadas simultâneas.                                                              |
+| **Unicidade do número** | Global — o número **não** é reutilizado                        | O número é um identificador de negócio (como nota fiscal): reutilizá-lo criaria ambiguidade no histórico. A exclusão lógica **reserva** o número. |
+| **Dinheiro**            | `Decimal(12,2)` no banco; `number` só na resposta              | Precisão exata na soma (`3 × 0.10 + 0.20 = 0.50`, nunca `0.5000000000000001`).                                                                    |
+| **Preço no input**      | Aceito como número ou string, no máximo 2 casas                | Valor com mais casas é **rejeitado**, nunca arredondado em silêncio.                                                                              |
+| **Total**               | Sempre calculado no servidor                                   | O cliente não envia total — o campo é rejeitado com `422`.                                                                                        |
+| **IDs**                 | UUID v4                                                        | Evita IDs sequenciais e, com isso, enumeração de registros.                                                                                       |
+| **Endereço e itens**    | Tabelas 1:1 e 1:N (não campos JSON)                            | Relacional de verdade, com integridade referencial e cascade do banco. Prisma composite types só existem no MongoDB.                              |
+
+### API e segurança
+
+| Tema                                 | Decisão                                                     | Por quê                                                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| **Erros**                            | Filtro global + contrato único                              | `P2002` → 409, `P2025` → 404, `P2003` → 400, erro de conexão → 503. Nenhuma rota devolve um formato diferente.                        |
+| **Validação**                        | `422 Unprocessable Entity`                                  | Distingue "requisição malformada" (400) de "regra violada" (422). `whitelist` + `forbidNonWhitelisted` rejeitam campo desconhecido.   |
+| **Propriedade**                      | Pedido de outra pessoa responde **404** (e não 403)         | A API não confirma a existência de registros que o solicitante não pode ver.                                                          |
+| **Senhas**                           | argon2id (19 MiB, 2 iterações, 1 thread — OWASP)            | Resistente a GPU/ASIC; o serviço é isolado para permitir troca de algoritmo.                                                          |
+| **Refresh token**                    | Valor opaco de 48 bytes; só o **hash SHA-256** é persistido | Vazamento do banco não permite reaproveitar nenhuma sessão.                                                                           |
+| **Rotação + detecção de reuso**      | Token usado é revogado; reusá-lo revoga todas as sessões    | Indício de roubo: a resposta é invalidar tudo, não só o token.                                                                        |
+| **Revogação imediata**               | O guard recarrega o usuário do banco a cada requisição      | Conta desativada ou excluída perde o acesso na hora, sem esperar o token expirar.                                                     |
+| **Enumeração de contas**             | Mesma mensagem e verificação de hash descartável            | Resposta idêntica e tempo equivalente para e-mail inexistente e senha errada.                                                         |
+| **Escalonamento de privilégio**      | `role` não existe no DTO de cadastro                        | Todo cadastro nasce `USER`; enviar `role` resulta em `422`.                                                                           |
+| **Rate limit**                       | 5/min em credenciais, 100/min global, configurável          | Proteção contra força bruta, com `Retry-After` e `429` no mesmo contrato de erro.                                                     |
+| **`trust proxy`**                    | `0` por padrão                                              | A API não confia em `X-Forwarded-For` — um cliente poderia forjar o header e escapar do rate limit. Use `1` apenas com proxy reverso. |
+| **Rate limit por limitador nomeado** | `default` + `auth`, com `skipIf`                            | O limite de credencial só vale onde interessa, e vem do ambiente (ajustável por deploy).                                              |
+
+### Operação
+
+| Tema                        | Decisão                                           | Por quê                                                                                                                                           |
+| --------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Configuração única**      | `src/app.setup.ts`                                | `main.ts` e o setup dos testes e2e usam o **mesmo** pipeline — elimina a divergência clássica "funciona no dev, falha no teste".                  |
+| **Validação de ambiente**   | Joi **antes** do DI subir                         | Falha rápido e com mensagem clara, em vez de erro em produção. Em produção, segredos obrigatórios, distintos e diferentes dos de desenvolvimento. |
+| **Seed explícita**          | `npm run seed` / `npm run seed:api`               | A API **nunca** popula o banco sozinha: o banco nasce vazio e o que entra é sempre explícito.                                                     |
+| **Migrations como serviço** | Serviço `migrate` separado no Compose             | O CLI do Prisma não está na imagem final; a API só sobe depois que as migrations são aplicadas.                                                   |
+| **Imagem**                  | Multi-stage, usuário `node`, `tini`, health check | 179 MB, sem privilégios, encerramento gracioso e sinal correto.                                                                                   |
+| **Logs**                    | `LOG_FORMAT` (`pretty`/`json`)                    | Legível no desenvolvimento, estruturado no container. O `authorization` é sempre censurado.                                                       |
+| **Cobertura com piso**      | Piso configurado (75/80/75)                       | A suíte **falha** se a qualidade cair — é rede de segurança, não formulário.                                                                      |
+
+### Duas armadilhas técnicas encontradas (e como foram resolvidas)
+
+1. **`import type` quebra a injeção do Nest.** O `design:paramtypes` emitido precisa do **valor** da
+   classe injetada em runtime. Com `import type`, o Nest vê `undefined` e falha com
+   _"can't resolve dependencies"_. O mesmo vale para o plugin do Swagger: ele só processa
+   **classes**, não interfaces.
+2. **O Nest CLI lê os plugins de `compilerOptions.plugins`**, e não do topo do `nest-cli.json`.
+   Com a configuração no lugar errado, o plugin simplesmente não roda — e a documentação sai
+   com os schemas vazios, sem erro nenhum.
 
 ---
 
@@ -634,3 +843,24 @@ Para rodar a seed contra o banco do Docker (rodando na porta 5432 do host):
 ```bash
 DATABASE_URL="postgresql://naporta:naporta_dev_password@localhost:5432/naporta" npm run seed
 ```
+
+---
+
+## Limitações conhecidas e próximos passos
+
+O que ficou de fora e o que eu faria a seguir, em ordem de valor:
+
+| Prioridade | Item                                        | Por quê                                                                                                                                    |
+| ---------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1          | **Cache do rate limit distribuído** (Redis) | O limitador atual é em memória: com várias instâncias da API, o limite vale por instância.                                                 |
+| 2          | **Refresh tokens por dispositivo**          | Hoje a rotação é por sessão; dá para listar e revogar os dispositivos conectados por usuário.                                              |
+| 3          | **Fila para as notificações de status**     | Hoje a mudança de status é síncrona; com integração de e-mail/SMS, ela viraria um job.                                                     |
+| 4          | **Histórico de itens**                      | Ao trocar a lista de itens, os antigos são removidos fisicamente (o pedido é soft delete). Com histórico, eles também teriam `deleted_at`. |
+| 5          | **Observabilidade**                         | Tracing (OpenTelemetry) e métricas de negócio (pedidos por status, tempo médio de entrega).                                                |
+| 6          | **Testes de carga**                         | O teste de concorrência cobre 10 pedidos; falta uma suíte com k6 ou autocannon.                                                            |
+
+**Fora do escopo por decisão:** serverless (o enunciado lista como bônus, mas a stack com
+long-running container é mais simples de operar e de testar), integração com transportadoras e
+busca por CEP em tempo real.
+
+---

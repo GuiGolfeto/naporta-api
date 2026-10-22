@@ -22,6 +22,7 @@ process.env.AUTH_THROTTLE_LIMIT = '1000';
 // é avaliado — por isso as variáveis acima precisam estar definidas antes.
 const { AppModule } = await import('../src/app.module.js');
 const { configureApp } = await import('../src/app.setup.js');
+const { setupSwagger } = await import('../src/common/swagger.js');
 
 /**
  * Sobe a aplicação Nest em memória, com o mesmo pipeline de configuração
@@ -34,6 +35,7 @@ export async function createTestApp(): Promise<INestApplication> {
 
   const app = moduleRef.createNestApplication();
   configureApp(app);
+  setupSwagger(app);
 
   await app.init();
 

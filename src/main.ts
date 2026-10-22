@@ -8,6 +8,7 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 
 import { AppModule } from './app.module.js';
 import { configureApp } from './app.setup.js';
+import { setupSwagger } from './common/swagger.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -32,6 +33,7 @@ async function bootstrap(): Promise<void> {
   );
 
   configureApp(app);
+  setupSwagger(app);
 
   app.enableShutdownHooks();
 

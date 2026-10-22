@@ -25,7 +25,10 @@ export function configureApp(app: INestApplication): void {
       forbidNonWhitelisted: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
-      validateCustomDecorators: true,
+      // O `@CurrentUser()` devolve um valor montado pela API (JWT + banco),
+      // nunca entrada do cliente — validá-lo não agrega e quebraria o
+      // `whitelist` (os campos do usuário não são "propriedades do DTO").
+      validateCustomDecorators: false,
       // 422 (Unprocessable Entity): a requisição é sintaticamente válida,
       // mas não atende às regras de negócio — distinção mais útil que o 400
       // genérico do Nest para o cliente da API.

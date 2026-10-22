@@ -1,7 +1,7 @@
 {
   "name": "naporta-api",
   "version": "0.1.0",
-  "description": "Web API para a naPorta \u2014 gest\u00e3o de pedidos de entrega",
+  "description": "Web API para a naPorta — gestão de pedidos de entrega",
   "author": "naPorta",
   "private": true,
   "license": "UNLICENSED",
@@ -40,6 +40,7 @@
     "@nestjs/core": "12.2.0",
     "@nestjs/jwt": "^12.0.3",
     "@nestjs/platform-express": "12.2.0",
+    "@nestjs/swagger": "^12.0.2",
     "@nestjs/terminus": "12.1.0",
     "@nestjs/throttler": "6.7.1",
     "@prisma/adapter-pg": "7.10.1",

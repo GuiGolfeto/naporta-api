@@ -173,14 +173,22 @@ soft delete real, numerador sem colisão sob concorrência e precisão de dinhei
 
 **Aceite**: `docker compose up --build` sobe stack completa e `/api/v1/health` responde.
 
-### Módulo 7 — Documentação
+### Módulo 7 — Documentação ✅ CONCLUÍDO
 
-- `README.md`: pré-requisitos, execução local e via Docker, scripts, seed, testes, cobertura
-- Seção **"Decisões & Justificativas"** (stack, modelagem, segurança, soft delete, dinheiro)
-- Diagrama de arquitetura (Mermaid) + diagrama ER (Mermaid)
-- OpenAPI interativa em `/docs`
+- `README.md` reescrito como porta de entrada do projeto: sumário, "como avaliar em 5 minutos",
+  setup do zero (local e Docker), arquitetura (Mermaid), referência da API, segurança, seed,
+  modelo de dados (ER), testes, Docker, variáveis de ambiente, decisões justificadas por tema e
+  limitações/próximos passos
+- Documentação OpenAPI/Swagger em **`/docs`** (UI) e **`/docs-json`** (documento), com esquema
+  de segurança Bearer e botão "Authorize"
+- Schemas gerados pelo **plugin do `@nestjs/swagger`** (configurado no `nest-cli.json`): os
+  DTOs viram a fonte da verdade da validação **e** da documentação, sem divergir
+- Tipos de resposta convertidos em **classes** (o plugin processa classes, não interfaces)
+- `GET /users` (só ADMIN) e health checks documentados junto com o resto
+- 4 testes e2e validando o documento OpenAPI (paths, security scheme e schemas)
 
-**Aceite**: README permite a um avaliador rodar o projeto do zero, seguindo só o documento.
+**Aceite**: um avaliador clone o repositório e, seguindo apenas o README, sobe a API do zero,
+entende as decisões técnicas e exercita a API pela documentação interativa.
 
 ### Módulo 8 — Bônus
 

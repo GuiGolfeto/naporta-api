@@ -1,22 +1,41 @@
 import { type Role } from '../../../generated/prisma/client.js';
 import type { User } from '../../../generated/prisma/client.js';
 
-/** Usuário na resposta da API (nunca inclui `passwordHash`). */
-export interface UserResponse {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  isActive: boolean;
-  createdAt: string;
-}
-
 /**
  * Campos do usuário expostos na API.
  *
  * `passwordHash` (e os campos internos) ficam de fora por construção.
  */
 export type PublicUser = Pick<User, 'id' | 'name' | 'email' | 'role' | 'isActive' | 'createdAt'>;
+
+/**
+ * Usuário na resposta da API.
+ *
+ * Classe (e não interface) para que o plugin do `@nestjs/swagger` gere o
+ * schema OpenAPI.
+ */
+export class UserResponse {
+  id!: string;
+  name!: string;
+  email!: string;
+  role!: Role;
+  isActive!: boolean;
+  createdAt!: string;
+}
+
+/** Metainformação de paginação. */
+export class PaginationMeta {
+  total!: number;
+  page!: number;
+  limit!: number;
+  totalPages!: number;
+}
+
+/** Página de usuários. */
+export class PaginatedUsers {
+  data!: UserResponse[];
+  meta!: PaginationMeta;
+}
 
 /** Converte o modelo do Prisma na resposta da API. */
 export function toUserResponse(user: PublicUser): UserResponse {

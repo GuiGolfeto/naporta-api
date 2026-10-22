@@ -13,7 +13,11 @@ import type { CreateOrderDto } from './dto/create-order.dto.js';
 import type { UpdateOrderDto } from './dto/update-order.dto.js';
 import { canTransitionTo } from './order-status.js';
 import { OrderNumberService } from './order-number.service.js';
-import type { OrderResponse, OrderWithRelations } from './entities/order.response.js';
+import type {
+  OrderResponse,
+  OrderWithRelations,
+  PaginatedOrders,
+} from './entities/order.response.js';
 import { toOrderResponse } from './entities/order.response.js';
 import type { OrderQueryDto, OrderSortField } from './dto/order-query.dto.js';
 
@@ -27,17 +31,6 @@ const ORDER_INCLUDE = {
   address: true,
   createdBy: { select: { id: true, name: true } },
 } as const;
-
-/** Resultado de uma listagem paginada. */
-export interface PaginatedOrders {
-  data: OrderResponse[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
 
 /** Usuário autenticado (dono do pedido). */
 export interface OrderOwner {
