@@ -3,6 +3,8 @@ Pós-processamento do PDF gerado pelo Chrome headless.
 
 Adiciona rodapé com número da página, linha de assinatura e metadados do
 documento (título, autor, assunto, palavras-chave).
+
+Uso: npm run docs:pdf
 """
 
 import io

@@ -14,7 +14,7 @@ módulo, decisões técnicas, números do projeto e o que ficou de fora.
 | -------------------------------------------------- | ------------------------------------------------------------------------ |
 | [`../README.md`](../README.md)                     | Porta de entrada do projeto: como executar, referência da API e decisões |
 | [`ESCOPO.md`](./ESCOPO.md)                         | Escopo planejado, revisões e o que ficou fora                            |
-| [`documento-tecnico.pdf`](./documento-tecnico.pdf) | Documento técnico completo (23 páginas, com diagramas)                   |
+| [`documento-tecnico.pdf`](./documento-tecnico.pdf) | Documento técnico completo (25 páginas, com diagramas)                   |
 
 ---
 
@@ -59,7 +59,7 @@ naporta-desafio/                        141 arquivos versionados
 | 8   | **CI (bônus)**               | Integração contínua no GitHub Actions: qualidade, testes com Postgres de serviço e build das imagens         | `74038ac` |
 | 9   | **Monorepo + portal**        | Reorganização em workspaces, `packages/contracts`, portal Next.js completo                                   | `f71ee69` |
 | 10  | **Revisão final**            | Consistência de scripts/variáveis/links/estrutura e validação do portal de ponta a ponta                     | `d492a1d` |
-| 11  | **Documento técnico**        | PDF de 23 páginas com diagramas de arquitetura e ER, gerado do HTML versionado                               | `1f0276b` |
+| 11  | **Documento técnico**        | PDF de 25 páginas com diagramas de arquitetura e ER, gerado do HTML versionado                               | `1f0276b` |
 | 12  | **Monorepo (ajustes)**       | Escopo e roadmap movidos para `docs/`; serviço `seed` no Compose; exemplos de shell compatíveis com fish     | `b353626` |
 | 13  | **Portal robusto**           | Fronteiras de erro (`error.tsx`, `not-found.tsx`) e id inválido tratado como 404                             | `b2a1783` |
 

@@ -40,7 +40,7 @@
     "docker:up": "docker compose up -d --build",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api web",
-    "docs:pdf": "cd docs && \"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --no-sandbox --no-pdf-header-footer --print-to-pdf=\"documento-tecnico.pdf\" --virtual-time-budget=8000 \"file://$PWD/documento-tecnico.html\" && cd .. && python3 scripts/pdf-footer.py docs/documento-tecnico.pdf",
+    "docs:pdf": "cd docs && \"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome\" --headless --disable-gpu --no-sandbox --no-pdf-header-footer --print-to-pdf=\"documento-tecnico.pdf\" --virtual-time-budget=8000 \"file://$PWD/documento-tecnico.html\" && cd .. && python3 docs/pdf-footer.py docs/documento-tecnico.pdf",
     "build:contracts": "npm run build --workspace @naporta/contracts"
   }
 }
