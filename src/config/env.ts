@@ -21,8 +21,11 @@ export interface ValidatedEnv {
   JWT_REFRESH_SECRET: string;
   JWT_REFRESH_EXPIRES_IN: string;
   CORS_ORIGINS: string;
+  TRUST_PROXY: number;
   THROTTLE_TTL: number;
   THROTTLE_LIMIT: number;
+  AUTH_THROTTLE_TTL: number;
+  AUTH_THROTTLE_LIMIT: number;
   LOG_LEVEL: LogLevel;
 }
 

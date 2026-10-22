@@ -2,10 +2,10 @@
 
 Web API da **naPorta** para gestão de pedidos de entrega, construída com NestJS, Prisma e PostgreSQL.
 
-> **Status do projeto:** Módulos 0 e 1 concluídos — fundação e camada de dados.
-> A base está pronta (configuração, ambiente validado, Docker, lint, testes, health checks) e o
-> modelo de dados já está criado e migrado no Postgres. Autenticação (Módulo 2) e o CRUD de
-> pedidos (Módulo 3) vêm a seguir.
+> **Status do projeto:** Módulos 0, 1 e 2 concluídos — fundação, camada de dados e autenticação.
+> A base está pronta (configuração, ambiente validado, Docker, lint, testes, health checks), o
+> modelo de dados está criado e migrado no Postgres e a autenticação JWT já funciona. O CRUD
+> de pedidos (Módulo 3) vem a seguir.
 
 ---
 
@@ -140,26 +140,86 @@ O banco de testes (`naporta_test`) é isolado do banco de desenvolvimento e roda
 
 Todas as variáveis são validadas com Joi **antes** do container de DI subir: se algo estiver errado, a aplicação morre na inicialização com uma mensagem explícita.
 
-| Variável                 | Padrão                  | Descrição                                     |
-| ------------------------ | ----------------------- | --------------------------------------------- |
-| `NODE_ENV`               | `development`           | `development` \| `test` \| `production`       |
-| `PORT`                   | `3000`                  | Porta da API                                  |
-| `API_PREFIX`             | `api`                   | Prefixo global das rotas                      |
-| `API_VERSION`            | `1`                     | Versão da API (URI versioning)                |
-| `DB_HOST_PORT`           | `5432`                  | Porta **no host** do banco de desenvolvimento |
-| `DB_TEST_HOST_PORT`      | `5433`                  | Porta **no host** do banco de testes          |
-| `DATABASE_URL`           | URL local               | String de conexão do PostgreSQL               |
-| `DATABASE_URL_TEST`      | —                       | String de conexão do banco de testes e2e      |
-| `JWT_SECRET`             | segredo de dev          | Segredo do access token (mín. 32 chars)       |
-| `JWT_EXPIRES_IN`         | `15m`                   | Validade do access token                      |
-| `JWT_REFRESH_SECRET`     | segredo de dev          | Segredo do refresh token (mín. 32 chars)      |
-| `JWT_REFRESH_EXPIRES_IN` | `7d`                    | Validade do refresh token                     |
-| `CORS_ORIGINS`           | `http://localhost:3000` | Origens permitidas (separadas por vírgula)    |
-| `THROTTLE_TTL`           | `60000`                 | Janela do rate limit (ms)                     |
-| `THROTTLE_LIMIT`         | `100`                   | Requisições por janela                        |
-| `LOG_LEVEL`              | `info`                  | Nível do log                                  |
+| Variável                 | Padrão                  | Descrição                                                                 |
+| ------------------------ | ----------------------- | ------------------------------------------------------------------------- |
+| `NODE_ENV`               | `development`           | `development` \| `test` \| `production`                                   |
+| `PORT`                   | `3000`                  | Porta da API                                                              |
+| `API_PREFIX`             | `api`                   | Prefixo global das rotas                                                  |
+| `API_VERSION`            | `1`                     | Versão da API (URI versioning)                                            |
+| `DB_HOST_PORT`           | `5432`                  | Porta **no host** do banco de desenvolvimento                             |
+| `DB_TEST_HOST_PORT`      | `5433`                  | Porta **no host** do banco de testes                                      |
+| `DATABASE_URL`           | URL local               | String de conexão do PostgreSQL                                           |
+| `DATABASE_URL_TEST`      | —                       | String de conexão do banco de testes e2e                                  |
+| `JWT_SECRET`             | segredo de dev          | Segredo do access token (mín. 32 chars)                                   |
+| `JWT_EXPIRES_IN`         | `15m`                   | Validade do access token                                                  |
+| `JWT_REFRESH_SECRET`     | segredo de dev          | Segredo do refresh token (mín. 32 chars)                                  |
+| `JWT_REFRESH_EXPIRES_IN` | `7d`                    | Validade do refresh token                                                 |
+| `CORS_ORIGINS`           | `http://localhost:3000` | Origens permitidas (separadas por vírgula)                                |
+| `TRUST_PROXY`            | `0`                     | Proxies confiáveis à frente da API (0 = não confiar em `X-Forwarded-For`) |
+| `THROTTLE_TTL`           | `60000`                 | Janela do rate limit (ms)                                                 |
+| `THROTTLE_LIMIT`         | `100`                   | Requisições por janela                                                    |
+| `AUTH_THROTTLE_TTL`      | `60000`                 | Janela do rate limit de credencial (ms)                                   |
+| `AUTH_THROTTLE_LIMIT`    | `5`                     | Tentativas de login por janela                                            |
+| `LOG_LEVEL`              | `info`                  | Nível do log                                                              |
 
 Em `production`, `DATABASE_URL`, `JWT_SECRET` e `JWT_REFRESH_SECRET` são **obrigatórios**, os dois segredos precisam ser diferentes entre si e os valores de desenvolvimento são recusados.
+
+---
+
+## Autenticação
+
+Todos os endpoints exigem `Authorization: Bearer <accessToken>`, **exceto** os marcados como
+públicos (`/auth/register`, `/auth/login`, `/auth/refresh` e os health checks). A política é
+_secure by default_: uma rota nova já nasce protegida.
+
+| Método | Rota                    | Público | Descrição                                   |
+| ------ | ----------------------- | ------- | ------------------------------------------- |
+| `POST` | `/api/v1/auth/register` | sim     | Cria a conta e devolve a sessão inicial     |
+| `POST` | `/api/v1/auth/login`    | sim     | Autentica e devolve access + refresh token  |
+| `POST` | `/api/v1/auth/refresh`  | sim     | Renova a sessão (rotaciona o refresh token) |
+| `POST` | `/api/v1/auth/logout`   | não     | Revoga o refresh token informado            |
+| `GET`  | `/api/v1/auth/me`       | não     | Dados do usuário autenticado                |
+
+```bash
+# Cadastro
+curl -X POST http://localhost:3000/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Maria","email":"maria@exemplo.com","password":"Senha1234"}'
+```
+
+```jsonc
+{
+  "user": {
+    "id": "0f5c…",
+    "name": "Maria",
+    "email": "maria@exemplo.com",
+    "role": "USER",
+    "isActive": true,
+    "createdAt": "2026-10-22T05:07:54.814Z",
+  },
+  "accessToken": "eyJhbGciOiJIUzI1NiIs…",
+  "refreshToken": "s3cr3t-…",
+  "tokenType": "Bearer",
+  "expiresIn": 900,
+}
+```
+
+### Medidas de segurança
+
+| Medida                          | Detalhe                                                                                                                                                                        |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Senha**                       | Hash **argon2id** (19 MiB, 2 iterações, 1 thread — OWASP). O hash nunca é devolvido pela API.                                                                                  |
+| **Política de senha**           | Mínimo 8 caracteres, com pelo menos uma letra e um número.                                                                                                                     |
+| **Escalonamento de privilégio** | O papel (`role`) não existe no DTO de cadastro — enviá-lo resulta em `422`. Todo cadastro nasce como `USER`.                                                                   |
+| **Enumeração de contas**        | Login responde a mesma mensagem (`Credenciais inválidas.`) para e-mail inexistente e senha errada, e sempre verifica um hash descartável para não vazar por tempo de resposta. |
+| **Access token**                | JWT HS256 de 15 min, com `sub`, `email`, `role` e `type: 'access'` (impede reaproveitar um token como outro). `issuer`/`audience` validados.                                   |
+| **Refresh token**               | Valor opaco de 48 bytes; **apenas o hash SHA-256 é persistido**. Rotativo a cada renovação.                                                                                    |
+| **Detecção de reuso**           | Reapresentar um refresh token já rotacionado revoga **todas** as sessões do usuário (indício de roubo).                                                                        |
+| **Revogação imediata**          | A cada requisição o guard recarrega o usuário do banco: conta desativada ou excluída perde o acesso na hora, sem esperar o token expirar.                                      |
+| **Rate limit**                  | 5 tentativas/min nas rotas de credencial (configurável) e 100/min global. Resposta `429` com `Retry-After`.                                                                    |
+| **Entrada**                     | `ValidationPipe` global com `whitelist` e `forbidNonWhitelisted` — campo desconhecido é rejeitado com `422`.                                                                   |
+| **Segredos**                    | Segredos via `ConfigService` (nunca `process.env` espalhado); em produção, obrigatórios, distintos entre si e diferentes dos valores de desenvolvimento.                       |
+| **Transporte**                  | `helmet` com CSP/HSTS, CORS por whitelist e `trust proxy` para o rate limit funcionar atrás de proxy.                                                                          |
 
 ---
 
@@ -276,7 +336,11 @@ src/
 │   ├── filters/                 # filtro global de exceções
 │   └── utils/
 ├── config/                      # env tipado, validação (Joi) e namespaces
+├── common/
+│   ├── decorators/              # @Public(), @Roles(), @CurrentUser()
+│   └── throttling/              # rate limit global e de credenciais
 └── modules/
+    ├── auth/                    # register/login/refresh/logout/me, guards, senhas
     ├── health/                  # liveness + readiness
     ├── orders/                  # numeração sequencial do pedido
     └── prisma/                  # PrismaService + extensão de soft delete

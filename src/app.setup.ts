@@ -26,6 +26,10 @@ export function configureApp(app: INestApplication): void {
       transform: true,
       transformOptions: { enableImplicitConversion: true },
       validateCustomDecorators: true,
+      // 422 (Unprocessable Entity): a requisição é sintaticamente válida,
+      // mas não atende às regras de negócio — distinção mais útil que o 400
+      // genérico do Nest para o cliente da API.
+      errorHttpStatusCode: 422,
     }),
   );
 

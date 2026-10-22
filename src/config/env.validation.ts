@@ -43,8 +43,14 @@ export const envValidationSchema = Joi.object<ValidatedEnv>({
   JWT_REFRESH_EXPIRES_IN: Joi.string().trim().default('7d'),
 
   CORS_ORIGINS: Joi.string().trim().default('http://localhost:3000'),
+  // Quantos proxies à frente da API são confiáveis para o IP do cliente.
+  // 0 = não confiar em X-Forwarded-For (padrão seguro quando a API é
+  // exposta diretamente); 1 = há um proxy reverso (nginx) à frente.
+  TRUST_PROXY: Joi.number().integer().min(0).max(10).default(0),
   THROTTLE_TTL: Joi.number().integer().min(1000).default(60_000),
   THROTTLE_LIMIT: Joi.number().integer().min(1).default(100),
+  AUTH_THROTTLE_TTL: Joi.number().integer().min(1000).default(60_000),
+  AUTH_THROTTLE_LIMIT: Joi.number().integer().min(1).default(5),
 
   LOG_LEVEL: Joi.string()
     .valid(...LOG_LEVELS)

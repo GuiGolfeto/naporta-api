@@ -80,18 +80,31 @@
 comporta-se como exclusão lógica de verdade · numeração sequencial e sem duplicatas · lint,
 build e suites verdes.
 
-### Módulo 2 — Autenticação & segurança
+### Módulo 2 — Autenticação & segurança ✅ CONCLUÍDO
 
 - Rotas: `POST /auth/register`, `POST /auth/login`, `POST /auth/refresh`,
   `POST /auth/logout`, `GET /auth/me`
-- Senha com hash **argon2id** (fallback bcrypt); JWT access curto + refresh rotativo e revogável
-- `JwtAuthGuard` + decorator `@Public()`; `RolesGuard` + decorator `@Roles()`
-- `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`)
-- `helmet`, CORS restrito por env, `Throttler` (mais agressivo em `/auth/login`)
-- Política de senha; `passwordHash` nunca serializado; `register` não permite escolher role
+- Senha com hash **argon2id** (19 MiB, 2 iterações, 1 thread — OWASP), em serviço isolado para
+  permitir troca de algoritmo
+- JWT access (15 min, HS256, `issuer`/`audience`/`type: 'access'`) + refresh **opaco** de 48 bytes
+  com apenas o **hash SHA-256** persistido
+- Refresh **rotativo** com **detecção de reuso**: reapresentar um token já rotacionado revoga
+  todas as sessões do usuário
+- `JwtAuthGuard` + `@Public()` e `RolesGuard` + `@Roles()` registrados como guards globais
+  (_secure by default_); sem Passport — apenas `@nestjs/jwt`
+- Guard recarrega o usuário do banco a cada requisição: conta desativada/excluída perde o acesso
+  imediatamente
+- `ValidationPipe` global com `whitelist` + `forbidNonWhitelisted` e status **422** para erros de
+  validação
+- `helmet` com CSP, CORS por whitelist, `TRUST_PROXY` seguro por padrão (0) e rate limit
+  configurável: 5/min nas rotas de credencial e 100/min global
+- Política de senha (mín. 8, letra + número); `passwordHash` nunca serializado; o papel não
+  existe no DTO de cadastro (impede escalonamento de privilégio)
+- Login com resposta genérica e verificação de hash descartável (anti enumeração de contas)
 
-**Aceite**: fluxo register → login → `/auth/me` funciona com Bearer token; sem token, 401;
-usuário comum acessando pedido alheio, 403.
+**Aceite**: register → login → `/auth/me` funciona com Bearer token; sem token, 401; token
+inválido, 401; refresh rotaciona e reuso revoga as sessões; logout revoga; conta desativada
+perde o acesso; rate limit responde 429.
 
 ### Módulo 3 — Pedidos (core)
 

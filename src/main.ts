@@ -35,11 +35,15 @@ async function bootstrap(): Promise<void> {
 
   app.enableShutdownHooks();
 
-  // Necessário para o rate limit funcionar corretamente atrás de um proxy
-  // (nginx, load balancer) — o `X-Forwarded-For` passa a ser considerado.
-  (app.getHttpAdapter().getInstance() as Express).set('trust proxy', 1);
-
   const configService = app.get(ConfigService);
+
+  // `trust proxy` define quantos proxies à frente são confiáveis para o IP do
+  // cliente. Padrão 0 (não confiar em `X-Forwarded-For`): com a API exposta
+  // diretamente, um cliente poderia forjar o header e escapar do rate limit.
+  // Ao publicar atrás de um proxy reverso, configure `TRUST_PROXY=1`.
+  const trustProxy = configService.getOrThrow<number>('http.trustProxy');
+  (app.getHttpAdapter().getInstance() as Express).set('trust proxy', trustProxy);
+
   const port = configService.getOrThrow<number>('app.port');
   const apiPrefix = configService.getOrThrow<string>('app.apiPrefix');
   const apiVersion = configService.getOrThrow<string>('app.apiVersion');

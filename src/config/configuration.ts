@@ -33,8 +33,11 @@ export const httpConfig = registerAs('http', () => ({
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),
+  trustProxy: Number(process.env.TRUST_PROXY ?? 0),
   throttleTtl: Number(process.env.THROTTLE_TTL ?? 60_000),
   throttleLimit: Number(process.env.THROTTLE_LIMIT ?? 100),
+  authThrottleTtl: Number(process.env.AUTH_THROTTLE_TTL ?? 60_000),
+  authThrottleLimit: Number(process.env.AUTH_THROTTLE_LIMIT ?? 5),
 }));
 
 export const loggerConfig = registerAs('logger', () => ({

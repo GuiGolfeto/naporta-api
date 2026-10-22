@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { APP_FILTER } from '@nestjs/core';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { buildThrottlerOptions } from './common/throttling/throttler.config.js';
 import { configuration } from './config/configuration.js';
 import { validateEnv } from './config/env.validation.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard.js';
+import { RolesGuard } from './modules/auth/guards/roles.guard.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
@@ -57,21 +62,23 @@ import { PrismaModule } from './modules/prisma/prisma.module.js';
     }),
 
     ThrottlerModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        throttlers: [
-          {
-            ttl: configService.getOrThrow<number>('http.throttleTtl'),
-            limit: configService.getOrThrow<number>('http.throttleLimit'),
-          },
-        ],
-      }),
+      inject: [ConfigService, Reflector],
+      useFactory: (configService: ConfigService, reflector: Reflector) =>
+        buildThrottlerOptions(configService, reflector),
     }),
 
     PrismaModule,
+    AuthModule,
     OrdersModule,
     HealthModule,
   ],
-  providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
+  providers: [
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    // Guards globais — a ordem importa: rate limit, autenticação e por fim
+    // autorização. Rotas sem `@Public()` exigem Bearer token.
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}
