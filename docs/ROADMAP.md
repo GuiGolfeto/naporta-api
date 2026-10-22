@@ -246,6 +246,9 @@ naporta-desafio/                        134 arquivos versionados
 
 ## 9. Como rodar
 
+> **Shell:** os exemplos usam **bash/zsh**. No **fish**, a atribuição de variável é
+> `set VAR (...)` em vez de `VAR=$(...)` — o resto é igual.
+
 ```bash
 # Stack completa (banco + migrations + API + portal)
 cp .env.example .env

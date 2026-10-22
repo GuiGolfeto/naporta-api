@@ -46,6 +46,10 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 
 ## Como avaliar em 5 minutos
 
+> **Shell:** os exemplos usam **bash/zsh**. No **fish**, a atribuição é diferente —
+> troque `TOKEN=$(...)` por `set TOKEN (...)`. As demais linhas (comandos, `&&`, `\`) são
+> iguais nos dois.
+
 ```bash
 # 1) sobe a stack completa (banco + migrations + API + portal)
 docker compose up -d --build
@@ -58,6 +62,9 @@ docker compose --profile seed run --rm seed
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"admin@naporta.local","password":"Admin@1234"}' | jq -r .accessToken)
+#   no fish:  set TOKEN (curl -s -X POST http://localhost:3000/api/v1/auth/login \
+#                -H 'Content-Type: application/json' \
+#                -d '{"email":"admin@naporta.local","password":"Admin@1234"}' | jq -r .accessToken)
 
 curl -s -X POST http://localhost:3000/api/v1/orders \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
@@ -945,7 +952,12 @@ api:
 Para rodar a seed contra o banco do Docker (rodando na porta 5432 do host):
 
 ```bash
+# bash/zsh
 DATABASE_URL="postgresql://naporta:naporta_dev_password@localhost:5432/naporta" npm run seed
+
+# fish
+set -x DATABASE_URL "postgresql://naporta:naporta_dev_password@localhost:5432/naporta"
+npm run seed
 ```
 
 ---
