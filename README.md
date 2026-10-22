@@ -34,6 +34,9 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 - [Decisões e justificativas](#decisões-e-justificativas)
 - [Limitações conhecidas e próximos passos](#limitações-conhecidas-e-próximos-passos)
 
+> 📍 **Roadmap completo do projeto** (linha do tempo por módulo, entregas, decisões, números e
+> limitações): [ROADMAP.md](./ROADMAP.md)
+
 ---
 
 ## Como avaliar em 5 minutos
