@@ -94,6 +94,106 @@ jobs:
           path: apps/api/coverage-e2e
           retention-days: 7
 
+  e2e-portal:
+    name: E2E do portal (Playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: naporta
+          POSTGRES_PASSWORD: naporta_test_password
+          POSTGRES_DB: naporta_e2e
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U naporta -d naporta_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://naporta:naporta_test_password@localhost:5432/naporta_e2e
+      JWT_SECRET: ci-only-access-secret-000000000000000000000
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-00000000000000000000
+      CORS_ORIGINS: http://localhost:3001
+      TRUST_PROXY: '0'
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+      # URL da API: usada pelo servidor do portal e pelo `globalSetup` do Playwright
+      API_URL: http://localhost:3000/api/v1
+      NEXT_PUBLIC_API_URL: http://localhost:3000/api/v1
+      PORTAL_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+      - run: npm run prisma:generate
+      - run: npm run build:contracts
+
+      - name: Aplica as migrations
+        run: npm run prisma:migrate
+
+      - name: Build da API
+        run: npm run build:api
+
+      - name: Sobe a API
+        run: |
+          NODE_ENV=production nohup npm run start:api > /tmp/api.log 2>&1 &
+          for tentativa in $(seq 1 60); do
+            if curl -sf http://localhost:3000/api/v1/health > /dev/null; then
+              echo "API no ar."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::A API não respondeu ao health check."
+          cat /tmp/api.log
+          exit 1
+
+      - name: Build do portal
+        run: npm run build:web
+
+      - name: Sobe o portal
+        run: |
+          # O servidor standalone é o mesmo artefato que roda no Docker:
+          # os arquivos estáticos são copiados para dentro dele.
+          cp -R apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+          NODE_ENV=production PORT=3001 HOSTNAME=0.0.0.0 \
+            nohup node apps/web/.next/standalone/apps/web/server.js > /tmp/web.log 2>&1 &
+          for tentativa in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3001/login; then
+              echo "Portal no ar."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::O portal não respondeu."
+          cat /tmp/web.log
+          exit 1
+
+      - name: Instala o Chromium do Playwright
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes e2e do portal
+        run: npm run test:e2e:web
+
+      - name: Publica o relatório do Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report
+          retention-days: 7
+
   docker:
     name: Imagens Docker
     runs-on: ubuntu-latest

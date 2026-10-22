@@ -2,7 +2,7 @@
   "name": "naporta",
   "version": "0.1.0",
   "private": true,
-  "description": "Monorepo da naPorta \u2014 API (NestJS) e portal web (Next.js)",
+  "description": "Monorepo da naPorta — API (NestJS) e portal web (Next.js)",
   "license": "UNLICENSED",
   "workspaces": [
     "apps/*",
@@ -27,7 +27,8 @@
     "test": "npm run test --workspace @naporta/api",
     "test:api": "npm run test --workspace @naporta/api",
     "test:e2e": "npm run test:e2e --workspace @naporta/api",
-    "test:all": "npm run test --workspace @naporta/api && npm run test:e2e --workspace @naporta/api",
+    "test:e2e:web": "npm run test:e2e --workspace @naporta/web",
+    "test:all": "npm run test --workspace @naporta/api && npm run test:e2e --workspace @naporta/api && npm run test:e2e --workspace @naporta/web",
     "test:cov": "npm run test:cov --workspace @naporta/api",
     "test:e2e:cov": "npm run test:e2e:cov --workspace @naporta/api",
     "seed": "npm run seed --workspace @naporta/api",

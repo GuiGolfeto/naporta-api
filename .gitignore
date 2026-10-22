@@ -8,6 +8,11 @@ node_modules/
 **/out/
 *.tsbuildinfo
 
+# Playwright — estado de sessão e artefatos de teste
+**/e2e/.auth/
+**/test-results/
+**/playwright-report/
+
 # Testes / cobertura
 **/coverage/
 **/coverage-e2e/

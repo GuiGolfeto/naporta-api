@@ -10,9 +10,9 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Documentação interativa** | http://localhost:3000/docs (Swagger UI)                                                                                                       |
 | **Health check**            | http://localhost:3000/api/v1/health                                                                                                           |
-| **Testes**                  | 64 unitários · 89 e2e · cobertura de 78% (pisos configurados)                                                                                 |
+| **Testes**                  | 64 unitários · 89 e2e (API) · 4 e2e (portal, Playwright) — cobertura de 78% (pisos configurados)                                              |
 | **Imagem Docker**           | 175 MB (API) · 97 MB (portal), usuário sem privilégios, health check                                                                          |
-| **Integração contínua**     | ![CI](https://github.com/GuiGolfeto/naporta-api/actions/workflows/ci.yml/badge.svg) — lint, type-check, build, 153 testes e build das imagens |
+| **Integração contínua**     | ![CI](https://github.com/GuiGolfeto/naporta-api/actions/workflows/ci.yml/badge.svg) — lint, type-check, build, 157 testes e build das imagens |
 
 ---
 
@@ -123,7 +123,7 @@ npm run build           # contracts -> api -> web
 npm run lint            # ESLint (API + contratos) e o lint próprio do portal
 npm run typecheck       # type-check de todos os workspaces
 npm run test            # testes da API
-npm run test:all        # unitários + e2e
+npm run test:all        # unitários + e2e (API) + e2e do portal
 npm run seed            # popula o banco com dados fictícios
 ```
 
@@ -165,7 +165,7 @@ Dois caminhos, com o **token nunca exposto ao JavaScript do browser**:
 | Framework         | NestJS 12                                                                           |
 | ORM               | Prisma 7 (client gerado em TypeScript, sem engine Rust)                             |
 | Banco             | PostgreSQL 16 (Docker Compose)                                                      |
-| Testes            | Vitest 5 (unit + e2e com Supertest)                                                 |
+| Testes            | Vitest 5 (unit + e2e com Supertest) · Playwright (e2e do portal)                    |
 | Lint / Formatação | ESLint 10 (flat config, com type-checking) + Prettier 3                             |
 | Logs              | nestjs-pino (JSON em produção, legível em desenvolvimento)                          |
 | Documentação      | OpenAPI 3 / Swagger UI em `/docs`                                                   |
@@ -270,7 +270,9 @@ Todos os scripts rodam **na raiz** do monorepo (npm workspaces).
 | `npm run format` / `format:check`                   | Prettier                                             |
 | `npm run typecheck`                                 | Type-check de todos os workspaces                    |
 | `npm test`                                          | Testes unitários da API                              |
-| `npm run test:all`                                  | Unitários + e2e                                      |
+| `npm run test:all`                                  | Unitários + e2e (API) + e2e do portal                |
+| `npm run test:e2e`                                  | E2E da API (precisa do `db-test`)                    |
+| `npm run test:e2e:web`                              | E2E do portal (Playwright — precisa da stack no ar)  |
 | `npm run test:cov` / `test:e2e:cov`                 | Cobertura (com piso configurado)                     |
 | `npm run seed`                                      | Popula o banco com dados fictícios (idempotente)     |
 | `docker compose --profile seed run --rm seed`       | O mesmo, com o banco do Docker rodando               |
@@ -286,12 +288,13 @@ Todos os scripts rodam **na raiz** do monorepo (npm workspaces).
 
 ## Testes
 
-A suíte é dividida em duas partes, com finalidades diferentes:
+A suíte é dividida em três partes, com finalidades diferentes:
 
-| Suíte                | Comando            | Banco                | O que cobre                                                                                                                                                  |
-| -------------------- | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Unitária**         | `npm test`         | não precisa          | Funções puras: transições de status, CPF/CNPJ, precisão decimal, mapeamento de erros do Prisma, parsing de duração, configuração do throttler, hash de senha |
-| **E2E / integração** | `npm run test:e2e` | precisa do `db-test` | A aplicação inteira via HTTP: autenticação, refresh rotativo, CRUD de pedidos, filtros, paginação, propriedade, soft delete, seed, rate limit e concorrência |
+| Suíte                | Comando                | Banco                | O que cobre                                                                                                                                                  |
+| -------------------- | ---------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Unitária**         | `npm test`             | não precisa          | Funções puras: transições de status, CPF/CNPJ, precisão decimal, mapeamento de erros do Prisma, parsing de duração, configuração do throttler, hash de senha |
+| **E2E / integração** | `npm run test:e2e`     | precisa do `db-test` | A aplicação inteira via HTTP: autenticação, refresh rotativo, CRUD de pedidos, filtros, paginação, propriedade, soft delete, seed, rate limit e concorrência |
+| **E2E do portal**    | `npm run test:e2e:web` | a stack no ar        | O portal no navegador (Playwright): login, dashboard, criação de pedido, mudança de status e exclusão                                                        |
 
 ```bash
 # Unitários (rápidos, sem banco)
@@ -301,7 +304,12 @@ npm test
 docker compose --profile test up -d db-test
 npm run test:e2e
 
-# As duas suítes + cobertura
+# E2E do portal (precisa da API e do portal no ar)
+docker compose up -d --build
+npx playwright install chromium   # só na primeira vez
+npm run test:e2e:web
+
+# As três suítes + cobertura
 npm run test:all
 npm run test:cov        # cobertura da suíte unitária
 npm run test:e2e:cov    # cobertura da suíte e2e (a que importa)
@@ -310,6 +318,35 @@ npm run test:e2e:cov    # cobertura da suíte e2e (a que importa)
 O banco de testes (`naporta_test`) é isolado do banco de desenvolvimento e roda na porta `5433`
 por padrão. As migrations são aplicadas automaticamente pelo _setup global_ do Vitest, antes da
 suíte — não é preciso rodar nada manualmente.
+
+### A suíte e2e do portal (Playwright)
+
+O portal também é testado de ponta a ponta, **no navegador e contra a API real** (sem mocks): é o
+ún jeito de provar que o login, o cookie de sessão e as Server Actions funcionam no navegador de
+verdade.
+
+| Cenário                   | O que verifica                                                               |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| **Credenciais inválidas** | O login recusado mostra o erro e **não** abre sessão                         |
+| **Sessão autenticada**    | O dashboard abre com o usuário logado (cookie `httpOnly` + token em memória) |
+| **Criação de pedido**     | O formulário cria o pedido e leva ao detalhe com o número gerado pela API    |
+| **Status e exclusão**     | A mudança de status é aplicada e o pedido excluído some da listagem          |
+
+Dois detalhes do desenho da suíte:
+
+- **Rate limit de credencial (5/min)** — o `globalSetup` cria o usuário e faz **um** login,
+  salvando o estado da sessão (`e2e/.auth/state.json`) para os testes seguintes. A suíte consome
+  3 chamadas de credencial no total, dentro do limite;
+- **Ordem dos testes** — cada pedido criado usa um nome de cliente único, para que as asserções
+  não dependam do que os outros testes deixaram no banco.
+
+```bash
+npm run test:e2e:web          # roda a suíte (portal em http://localhost:3001)
+npm run test:e2e:web -- --ui  # modo interativo, com Inspector
+npm run test:e2e:web -- --report  # abre o relatório HTML
+```
+
+> O relatório HTML fica em `apps/web/playwright-report/` e é publicado como artefato no CI.
 
 ### Cobertura
 
@@ -344,11 +381,12 @@ segurança do código, não um formality check.
 
 | Ferramenta              | Papel                                                                  |
 | ----------------------- | ---------------------------------------------------------------------- |
-| **Vitest**              | Runner das duas suítes                                                 |
+| **Vitest**              | Runner das duas suítes da API                                          |
 | **Supertest**           | Requisições HTTP contra a aplicação Nest em memória                    |
 | **unplugin-swc**        | Compilação dos `.ts` com metadata de decorator (o esbuild não emite)   |
 | **@vitest/coverage-v8** | Cobertura via V8 (sem instrumentação)                                  |
 | **`@nestjs/testing`**   | Sobe a aplicação real — os e2e testam a mesma configuração de produção |
+| **Playwright**          | E2E do portal no navegador (Chromium), contra a API real               |
 
 ---
 
@@ -812,6 +850,7 @@ apps/web/src/
 ├── app/                         # rotas, Server Components e Server Actions
 ├── components/                  # UI (tabela, filtros, formulários, header)
 └── lib/                         # client da API (servidor e browser), sessão, formatação
+apps/web/e2e/                    # suíte e2e do portal (Playwright)
 packages/contracts/src/          # o contrato da API (tipos + transições de status)
 ```
 
@@ -975,6 +1014,7 @@ O que ficou de fora e o que eu faria a seguir, em ordem de valor:
 | 5          | **Observabilidade**                         | Tracing (OpenTelemetry) e métricas de negócio (pedidos por status, tempo médio de entrega).                                                |
 | 6          | **Testes de carga**                         | O teste de concorrência cobre 10 pedidos; falta uma suíte com k6 ou autocannon.                                                            |
 | 7          | **Deploy automático**                       | O CI valida e publica artefatos, mas o deploy em produção ainda é manual.                                                                  |
+| 8          | **E2E do portal em mais navegadores**       | A suíte do Playwright roda só no Chromium; com o Playwright, Firefox e WebKit são uma linha de configuração.                               |
 
 **Fora do escopo por decisão:** serverless (o enunciado lista como bônus, mas a stack com
 long-running container é mais simples de operar e de testar), integração com transportadoras e
@@ -982,14 +1022,17 @@ busca por CEP em tempo real.
 
 ### Integração contínua
 
-O workflow `.github/workflows/ci.yml` roda a cada push e pull request, em três jobs paralelos:
+O workflow `.github/workflows/ci.yml` roda a cada push e pull request, em quatro jobs paralelos:
 
-| Job           | O que faz                                                                                       |
-| ------------- | ----------------------------------------------------------------------------------------------- |
-| **qualidade** | `npm ci` → Prisma Client → contratos → `lint` → `format:check` → `typecheck` → `build`          |
-| **testes**    | Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso) → artefato publicado |
-| **docker**    | build das imagens da API e do portal                                                            |
+| Job            | O que faz                                                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **qualidade**  | `npm ci` → Prisma Client → contratos → `lint` → `format:check` → `typecheck` → `build`                                             |
+| **testes**     | Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso) → artefato publicado                                    |
+| **e2e-portal** | Postgres 16 de serviço → migrations → build da API → API no ar → build do portal → portal no ar → Playwright → relatório publicado |
+| **docker**     | build das imagens da API e do portal                                                                                               |
 
-O banco de testes é um serviço isolado do GitHub Actions: o de desenvolvimento nunca é tocado.
+O banco de testes é um serviço isolado do GitHub Actions: o de desenvolvimento nunca é tocado. O
+job do portal sobe a **API real** (em `production`) e o **servidor standalone do Next** — o mesmo
+artefato que roda no Docker — para que a suíte teste o que será publicado.
 
 ---

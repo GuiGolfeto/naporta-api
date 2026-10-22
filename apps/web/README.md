@@ -8,6 +8,7 @@ Portal web da **naPorta** — o front que consome a Web API (`@naporta/api`).
 - **Tailwind CSS 4**
 - **TypeScript 6** (strict)
 - Contrato de dados compartilhado com a API: `@naporta/contracts`
+- **Playwright** para a suíte e2e (no navegador, contra a API real)
 
 ## Como rodar
 
@@ -38,6 +39,37 @@ No Docker, o Compose define `API_URL=http://api:3000/api/v1` (o serviço da rede
 | `/`            | Dashboard: lista de pedidos, filtros e paginação |
 | `/orders/new`  | Novo pedido                                      |
 | `/orders/[id]` | Detalhe: itens, endereço, status e exclusão      |
+
+## Testes e2e (Playwright)
+
+A suíte do portal roda **no navegador e contra a API real** — sem mocks. Ela cobre o login, o
+dashboard, a criação de pedido, a mudança de status e a exclusão.
+
+```bash
+# na raiz do monorepo
+docker compose up -d --build        # API + portal no ar
+npx playwright install chromium     # só na primeira vez (baixa o navegador)
+
+npm run test:e2e:web                # roda a suíte
+npm run test:e2e:web -- --ui        # modo interativo
+npm run test:e2e:web -- --report    # abre o relatório HTML
+```
+
+| Arquivo                | Papel                                                       |
+| ---------------------- | ----------------------------------------------------------- |
+| `playwright.config.ts` | Configuração (baseURL, reporter, `storageState`, 1 worker)  |
+| `e2e/global-setup.ts`  | Cria o usuário, faz **um** login e salva o estado da sessão |
+| `e2e/portal.spec.ts`   | Os 4 cenários do portal                                     |
+
+Dois detalhes que valem explicar:
+
+- o `globalSetup` existe porque as rotas de credencial da API têm **rate limit de 5/min**: com um
+  único login e o estado da sessão salvo, a suíte consome 3 chamadas de credencial no total;
+- cada pedido criado usa um **nome de cliente único**, para que as asserções não dependam da ordem
+  dos testes.
+
+Variáveis reconhecidas: `PORTAL_URL` (padrão `http://localhost:3001`) e `API_URL` (usada pelo
+`globalSetup` para criar o usuário).
 
 ## Decisões
 

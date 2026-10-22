@@ -429,19 +429,19 @@
 
       <div class="cover-grid">
         <div class="cover-stat"><b>10</b><span>endpoints REST</span></div>
-        <div class="cover-stat"><b>153</b><span>testes automatizados</span></div>
+        <div class="cover-stat"><b>157</b><span>testes automatizados</span></div>
         <div class="cover-stat"><b>6</b><span>tabelas · 19 índices</span></div>
-        <div class="cover-stat"><b>8.300</b><span>linhas de código</span></div>
+        <div class="cover-stat"><b>8.638</b><span>linhas de código</span></div>
       </div>
 
       <div class="cover-stack">
         <b>Stack</b>
         Node.js 24 (ESM) · TypeScript 6.0 · NestJS 12 · Prisma 7 · PostgreSQL 16 · Vitest 5 ·
-        ESLint 10 · Next.js 16 · React 19 · Tailwind 4 · Docker
+        Playwright · ESLint 10 · Next.js 16 · React 19 · Tailwind 4 · Docker
       </div>
 
       <div class="cover-meta">
-        Versão 0.1.0 · 22 de outubro de 2026 · Repositório local, sem publicação em remoto
+        Versão 0.1.0 · 22 de outubro de 2026 · github.com/GuiGolfeto/naporta-api
       </div>
     </div>
 
@@ -523,8 +523,8 @@
           </tr>
           <tr>
             <td>Testes</td>
-            <td>153</td>
-            <td>64 unitários + 89 e2e</td>
+            <td>157</td>
+            <td>64 unitários + 89 e2e da API + 4 e2e do portal (Playwright)</td>
           </tr>
           <tr>
             <td>Cobertura</td>
@@ -538,8 +538,10 @@
           </tr>
           <tr>
             <td>Código</td>
-            <td>8.219 linhas</td>
-            <td>API 3.883 · testes 1.790 · portal 1.709 · contratos 263</td>
+            <td>8.638 linhas</td>
+            <td>
+              API 3.883 · testes da API 1.790 · portal 1.833 · e2e do portal 201 · contratos 263
+            </td>
           </tr>
           <tr>
             <td>Imagens</td>
@@ -623,7 +625,7 @@
           <tr>
             <td>Testes automatizados</td>
             <td><span class="badge ok">entregue</span></td>
-            <td>153 testes + cobertura com piso</td>
+            <td>157 testes (API + portal) + cobertura com piso</td>
           </tr>
           <tr>
             <td>Docker</td>
@@ -657,8 +659,13 @@
           </tr>
           <tr>
             <td>Bônus: CI/CD</td>
-            <td><span class="badge part">adiado</span></td>
-            <td>os scripts já existem na raiz do monorepo</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>GitHub Actions: 4 jobs (qualidade, testes, e2e do portal, imagens)</td>
+          </tr>
+          <tr>
+            <td>Bônus: e2e do portal</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>Playwright no navegador, contra a API real</td>
           </tr>
         </tbody>
       </table>
@@ -876,10 +883,11 @@
           </tr>
           <tr>
             <td>Testes</td>
-            <td>Vitest 5 + Supertest</td>
+            <td>Vitest 5 + Supertest + Playwright</td>
             <td>
               <code>unplugin-swc</code> no lugar do esbuild — o Nest depende de
-              <code>emitDecoratorMetadata</code>, que o esbuild não implementa.
+              <code>emitDecoratorMetadata</code>, que o esbuild não implementa. O Playwright cobre o
+              portal no navegador, contra a API real.
             </td>
           </tr>
           <tr>
@@ -1537,11 +1545,11 @@ export class OrderResponse implements OrderContract {
     <section class="page-break">
       <h2><span class="num">9.</span>Testes e qualidade</h2>
       <p class="lead">
-        153 testes em duas suítes com finalidades distintas, e um piso de cobertura que faz a
+        157 testes em três suítes com finalidades distintas, e um piso de cobertura que faz a
         suíte falhar se a qualidade cair.
       </p>
 
-      <h3>9.1 As duas suítes</h3>
+      <h3>9.1 As três suítes</h3>
       <table>
         <thead>
           <tr>
@@ -1568,6 +1576,15 @@ export class OrderResponse implements OrderContract {
             <td>
               A aplicação inteira via HTTP: autenticação, refresh rotativo, CRUD, filtros,
               paginação, propriedade, soft delete, seed, rate limit e concorrência.
+            </td>
+          </tr>
+          <tr>
+            <td>E2E do portal</td>
+            <td><code>npm run test:e2e:web</code></td>
+            <td>a stack no ar</td>
+            <td>
+              O portal no navegador (Chromium), contra a API real: login, dashboard, criação de
+              pedido, mudança de status e exclusão.
             </td>
           </tr>
         </tbody>
@@ -1657,10 +1674,43 @@ export class OrderResponse implements OrderContract {
               (os testes fazem <code>TRUNCATE</code>).
             </td>
           </tr>
+          <tr>
+            <td>O portal funciona no navegador</td>
+            <td>
+              Login, dashboard, criação, mudança de status e exclusão verificados no Chromium, contra
+              a API real.
+            </td>
+          </tr>
         </tbody>
       </table>
 
-      <h3>9.4 Qualidade estática</h3>
+      <h3>9.4 A suíte e2e do portal (Playwright)</h3>
+      <p>
+        O portal também é testado de ponta a ponta, <strong>no navegador e contra a API real</strong>
+        — sem mocks. É o único jeito de provar que o cookie de sessão, as Server Actions e o
+        token em memória funcionam no navegador de verdade. O comando é
+        <code>npm run test:e2e:web</code>.
+      </p>
+      <p>Duas restrições do domínio moldaram o desenho da suíte:</p>
+      <ul>
+        <li>
+          <strong>Rate limit de credencial (5/min)</strong> — o <code>globalSetup</code> cria o
+          usuário, faz <strong>um único login</strong> e salva o estado da sessão
+          (<code>e2e/.auth/state.json</code>) para os testes seguintes. A suíte consome 3 chamadas
+          de credencial no total, dentro do limite.
+        </li>
+        <li>
+          <strong>Ordem dos testes</strong> — cada pedido criado usa um nome de cliente único,
+          para que as asserções não dependam do que os outros testes deixaram no banco.
+        </li>
+      </ul>
+      <p>
+        No CI, o job <code>e2e-portal</code> sobe a API em <code>production</code> e o servidor
+        <em>standalone</em> do Next — o mesmo artefato que roda no Docker — antes de rodar a
+        suíte e publicar o relatório HTML.
+      </p>
+
+      <h3>9.5 Qualidade estática</h3>
       <p>
         O lint roda com informação de tipo (<code>projectService</code>), o que habilita regras que
         só fazem sentido com o compilador: <code>no-floating-promises</code>,
@@ -1740,8 +1790,8 @@ runtime   → imagem final: dist + node_modules enxuto, usuário node</code></pr
 
       <h3>10.3 Integração contínua</h3>
       <p>
-        O workflow <code>.github/workflows/ci.yml</code> roda a cada push e pull request, em três jobs
-        paralelos:
+        O workflow <code>.github/workflows/ci.yml</code> roda a cada push e pull request, em quatro
+        jobs paralelos:
       </p>
       <table>
         <thead>
@@ -1766,6 +1816,17 @@ runtime   → imagem final: dist + node_modules enxuto, usuário node</code></pr
               Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso) → artefato
             </td>
             <td>O banco de testes é isolado; o de desenvolvimento nunca é tocado.</td>
+          </tr>
+          <tr>
+            <td><strong>e2e-portal</strong></td>
+            <td>
+              Postgres 16 de serviço → migrations → build da API → API no ar → build do portal →
+              portal no ar → Playwright → artefato
+            </td>
+            <td>
+              Testa o artefato de produção: API em <code>production</code> e o servidor
+              <em>standalone</em> do Next.
+            </td>
           </tr>
           <tr>
             <td><strong>docker</strong></td>
@@ -1989,22 +2050,17 @@ runtime   → imagem final: dist + node_modules enxuto, usuário node</code></pr
             <td>Adiado por decisão — os scripts já existem na raiz do monorepo.</td>
           </tr>
           <tr>
-            <td>Testes e2e do portal</td>
-            <td>Sem Playwright; o portal é exercitado manualmente e via API.</td>
+            <td>Navegadores do e2e</td>
+            <td>
+              A suíte do portal roda só no Chromium; Firefox e WebKit são uma linha de configuração
+              no Playwright.
+            </td>
           </tr>
         </tbody>
       </table>
 
       <h3>12.2 Próximos passos sugeridos</h3>
       <ol>
-        <li>
-          <strong>CI no GitHub Actions</strong> — <code>lint → typecheck → test → build</code>; os
-          scripts já existem.
-        </li>
-        <li>
-          <strong>Testes e2e do portal com Playwright</strong> — cobrindo login, criação de pedido
-          e mudança de status pela interface.
-        </li>
         <li>
           <strong>Rate limit com Redis</strong> — para rodar múltiplas instâncias da API atrás de
           um balanceador.
@@ -2060,7 +2116,8 @@ npm run format      # Prettier
 npm run typecheck   # type-check dos três workspaces
 npm test            # 64 testes unitários
 npm run test:e2e    # 89 testes e2e
-npm run test:all    # as duas suítes
+npm run test:e2e:web  # 4 testes e2e do portal (Playwright)
+npm run test:all    # as três suítes
 npm run test:cov    # cobertura da suíte unitária
 npm run test:e2e:cov  # cobertura da suíte e2e (com piso)</code></pre>
 

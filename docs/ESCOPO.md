@@ -6,13 +6,13 @@
 
 ## Identidade do projeto
 
-| Item            | Decisão                                                      |
-| --------------- | ------------------------------------------------------------ |
-| Nome do projeto | `naporta-api`                                                |
-| Diretório       | `/Users/golfeto/Desktop/naPorta-desafio`                     |
-| Package manager | npm 11 (Node 24)                                             |
-| Repositório     | `git init` local — **sem push remoto** até comando explícito |
-| Porta           | `3000` (API) / `5432` (Postgres)                             |
+| Item            | Decisão                                                                         |
+| --------------- | ------------------------------------------------------------------------------- |
+| Nome do projeto | `naporta-api`                                                                   |
+| Diretório       | `/Users/golfeto/Desktop/naPorta-desafio`                                        |
+| Package manager | npm 11 (Node 24)                                                                |
+| Repositório     | `github.com/GuiGolfeto/naporta-api` (público) — publicado sob comando explícito |
+| Porta           | `3000` (API) · `3001` (portal) · `5432` (Postgres)                              |
 
 ## Premissas técnicas
 
@@ -147,8 +147,8 @@ continua na tabela); usuário alheio → 404; total calculado no servidor.
   carregar o CLI do Prisma na imagem final da API
   (`docker compose --profile seed run --rm seed`)
 
-**Total da suíte**: 64 testes unitários + 89 e2e = **153**, com cobertura de 78% e piso
-configurado (a suíte falha se a qualidade cair).
+**Total da suíte**: 64 testes unitários + 89 e2e = **153** (mais os 4 do e2e do portal, no
+Módulo 14), com cobertura de 78% e piso configurado (a suíte falha se a qualidade cair).
 
 **Aceite**: `npm run seed` popula 3 usuários e 60 pedidos; rodar de novo não duplica nada; os
 pedidos aparecem na API com os filtros funcionando; login com as credenciais da seed funciona;
@@ -199,18 +199,20 @@ entende as decisões técnicas e exercita a API pela documentação interativa.
 
 ### Módulo 8 — Bônus: CI ✅ CONCLUÍDO
 
-- `.github/workflows/ci.yml` — integração contínua no GitHub Actions, em três jobs paralelos:
+- `.github/workflows/ci.yml` — integração contínua no GitHub Actions, em quatro jobs paralelos:
   - **qualidade**: `npm ci` → Prisma Client → contratos → `lint` → `format:check` →
     `typecheck` → `build`
   - **testes**: Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso
     configurado) → artefato publicado
+  - **e2e-portal**: Postgres 16 de serviço → migrations → build da API → API no ar → build do
+    portal → portal no ar → suíte Playwright → relatório publicado
   - **docker**: build das imagens da API e do portal
 - Aciona em `push` na `main`, em pull requests e por execução manual (`workflow_dispatch`)
 - Concorrência: execuções do mesmo branch são canceladas (`cancel-in-progress`)
 - O banco de testes é um serviço isolado do runner — o de desenvolvimento nunca é tocado
 
-**Aceite**: o workflow executa lint, formatação, type-check, build, as duas suítes e o build das
-imagens; o repositório fica verde no GitHub.
+**Aceite**: o workflow executa lint, formatação, type-check, build, as duas suítes, a suíte do
+portal e o build das imagens; o repositório fica verde no GitHub.
 
 ### Módulo 9 — Monorepo + portal web ✅ CONCLUÍDO
 
@@ -270,6 +272,23 @@ pelo portal; a API continua íntegra (todas as suítes verdes).
 **Aceite**: a raiz do README explica o monorepo; `npm run dev:api` e `npm run dev:web` funcionam;
 o Docker sobe os dois serviços.
 
+### Módulo 14 — E2E do portal (Playwright) ✅ CONCLUÍDO
+
+- Suíte no **navegador** (Chromium), contra a **API real** — sem mocks, sem simulação: o portal
+  fala com o backend de verdade
+- 4 cenários: credenciais inválidas, sessão autenticada (dashboard), criação de pedido e
+  status + exclusão
+- `apps/web/e2e/global-setup.ts`: cria o usuário pela API, faz **um** login e salva o estado da
+  sessão (`e2e/.auth/state.json`) — necessário porque as rotas de credencial têm **rate limit de
+  5/min** (a suíte consome 3 chamadas de credencial no total)
+- Cada pedido criado usa um **nome de cliente único**, para que as asserções não dependam da
+  ordem dos testes
+- Job próprio no CI (`e2e-portal`): sobe a API em `production` e o **servidor standalone** do
+  Next (o mesmo artefato do Docker) e publica o relatório HTML como artefato
+- Comandos: `npm run test:e2e:web` (raiz) · `npm run test:e2e` (dentro de `apps/web`)
+
+**Aceite**: `npm run test:e2e:web` verde contra a stack no ar; o job `e2e-portal` verde no CI.
+
 ---
 
 ## Não escopo (explícito)
@@ -277,7 +296,7 @@ o Docker sobe os dois serviços.
 - Serverless / deploy em nuvem
 - Integração com transportadoras / CEP real
 - Multi-tenant
-- Push para GitHub (somente sob comando explícito do candidato)
+- Push para GitHub sem comando explícito do candidato (o repositório foi publicado sob pedido)
 
 ## Riscos técnicos e mitigações
 

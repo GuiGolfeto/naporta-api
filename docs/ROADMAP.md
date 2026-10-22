@@ -21,7 +21,7 @@ módulo, decisões técnicas, números do projeto e o que ficou de fora.
 ## 1. Visão geral
 
 ```
-naporta-desafio/                        141 arquivos versionados
+naporta-desafio/                        144 arquivos versionados
 ├── apps/
 │   ├── api/                            Web API — NestJS 12 + Prisma 7 + PostgreSQL 16
 │   └── web/                            Portal — Next.js 16 + React 19 + Tailwind 4
@@ -30,17 +30,17 @@ naporta-desafio/                        141 arquivos versionados
 └── docker-compose.yml                  db + migrate + api + web
 ```
 
-| Números               |                                                                                   |
-| --------------------- | --------------------------------------------------------------------------------- |
-| Linhas de código      | **8.300** (API 3.883 · testes 1.790 · portal 1.790 · contratos 263)               |
-| Testes                | **153** (64 unitários + 89 e2e)                                                   |
-| Cobertura (suíte e2e) | **78%** statements · **85%** functions · **79%** lines — com **piso configurado** |
-| Endpoints             | **10**                                                                            |
-| Telas do portal       | **4**                                                                             |
-| Tabelas / índices     | **6** / **19**                                                                    |
-| Migrations            | **1** (versionada)                                                                |
-| Commits               | **20** (todos locais — nada enviado ao GitHub)                                    |
-| Imagens Docker        | API **175 MB** · portal **97 MB** (usuário sem privilégios, health check)         |
+| Números               |                                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------------------- |
+| Linhas de código      | **8.638** (API 3.883 · testes da API 1.790 · portal 1.833 · e2e do portal 201 · contratos 263)        |
+| Testes                | **157** (64 unitários + 89 e2e da API + 4 e2e do portal)                                              |
+| Cobertura (suíte e2e) | **78%** statements · **85%** functions · **79%** lines — com **piso configurado**                     |
+| Endpoints             | **10**                                                                                                |
+| Telas do portal       | **4**                                                                                                 |
+| Tabelas / índices     | **6** / **19**                                                                                        |
+| Migrations            | **1** (versionada)                                                                                    |
+| Commits               | **23** (publicados em [github.com/GuiGolfeto/naporta-api](https://github.com/GuiGolfeto/naporta-api)) |
+| Imagens Docker        | API **175 MB** · portal **97 MB** (usuário sem privilégios, health check)                             |
 
 ---
 
@@ -62,6 +62,7 @@ naporta-desafio/                        141 arquivos versionados
 | 11  | **Documento técnico**        | PDF de 25 páginas com diagramas de arquitetura e ER, gerado do HTML versionado                               | `1f0276b` |
 | 12  | **Monorepo (ajustes)**       | Escopo e roadmap movidos para `docs/`; serviço `seed` no Compose; exemplos de shell compatíveis com fish     | `b353626` |
 | 13  | **Portal robusto**           | Fronteiras de erro (`error.tsx`, `not-found.tsx`) e id inválido tratado como 404                             | `b2a1783` |
+| 14  | **E2E do portal**            | Suíte Playwright (login, dashboard, criação, status e exclusão) rodando em job próprio do CI                 | —         |
 
 ---
 
@@ -146,30 +147,43 @@ naporta-desafio/                        141 arquivos versionados
 - Consistência de scripts, variáveis, links e estrutura — verificada por script, não por olho
 - Portal validado de ponta a ponta (login → cookies → dashboard), em dev e no Docker
 
+### Módulo 14 — E2E do portal (Playwright)
+
+- **4 cenários no navegador, contra a API real** (sem mocks): credenciais inválidas, sessão
+  autenticada, criação de pedido e status + exclusão
+- `globalSetup` cria o usuário, faz **um** login e salva o estado da sessão
+  (`e2e/.auth/state.json`) — necessário porque as rotas de credencial têm **rate limit de 5/min**:
+  a suíte consome 3 chamadas de credencial no total
+- Cada pedido criado usa um **nome de cliente único**, para que as asserções não dependam da ordem
+  dos testes
+- Job próprio no CI (`e2e-portal`): Postgres de serviço → migrations → build → API no ar
+  (`production`) → portal no ar (servidor **standalone**, o mesmo artefato do Docker) → Playwright →
+  relatório publicado como artefato
+
 ---
 
 ## 4. Escopo do desafio × o que foi entregue
 
-| Requisito do enunciado                             | Status | Onde                                                     |
-| -------------------------------------------------- | ------ | -------------------------------------------------------- |
-| API em Node.js com NestJS                          | ✅     | `apps/api`                                               |
-| Autenticação JWT com Bearer                        | ✅     | `apps/api/src/modules/auth`                              |
-| Banco relacional                                   | ✅     | PostgreSQL 16 (Docker)                                   |
-| ORM                                                | ✅     | Prisma 7                                                 |
-| Rotas REST                                         | ✅     | 10 endpoints versionados em `/api/v1`                    |
-| README com execução e scripts                      | ✅     | `README.md` (raiz) (+ `apps/web/README.md`)              |
-| Seed com pedidos fictícios                         | ✅     | `prisma/seed.ts` (por comando)                           |
-| Criar / listar / filtrar / editar / excluir pedido | ✅     | filtro por número, status e período                      |
-| Estrutura de dados do pedido                       | ✅     | cliente, endereço, itens, data prevista, data de criação |
-| Exclusão lógica                                    | ✅     | extensão do Prisma                                       |
-| **Clean Code**                                     | ✅     | módulos, guards, filtros, mappers, tipagem estrita       |
-| **Testes automatizados**                           | ✅     | 153 testes + cobertura com piso                          |
-| **Docker**                                         | ✅     | 4 serviços, imagens não-root com health check            |
-| **Linter**                                         | ✅     | ESLint 10 com type-checking + Prettier                   |
-| Serverless                                         | ⏭️     | fora de escopo por decisão (documentada)                 |
-| **Bônus: portal web**                              | ✅     | `apps/web` (Next.js 16)                                  |
-| **Bônus: OpenAPI**                                 | ✅     | `/docs` e `/docs-json`                                   |
-| **Bônus: contrato compartilhado**                  | ✅     | `packages/contracts`                                     |
+| Requisito do enunciado                             | Status | Onde                                                       |
+| -------------------------------------------------- | ------ | ---------------------------------------------------------- |
+| API em Node.js com NestJS                          | ✅     | `apps/api`                                                 |
+| Autenticação JWT com Bearer                        | ✅     | `apps/api/src/modules/auth`                                |
+| Banco relacional                                   | ✅     | PostgreSQL 16 (Docker)                                     |
+| ORM                                                | ✅     | Prisma 7                                                   |
+| Rotas REST                                         | ✅     | 10 endpoints versionados em `/api/v1`                      |
+| README com execução e scripts                      | ✅     | `README.md` (raiz) (+ `apps/web/README.md`)                |
+| Seed com pedidos fictícios                         | ✅     | `prisma/seed.ts` (por comando)                             |
+| Criar / listar / filtrar / editar / excluir pedido | ✅     | filtro por número, status e período                        |
+| Estrutura de dados do pedido                       | ✅     | cliente, endereço, itens, data prevista, data de criação   |
+| Exclusão lógica                                    | ✅     | extensão do Prisma                                         |
+| **Clean Code**                                     | ✅     | módulos, guards, filtros, mappers, tipagem estrita         |
+| **Testes automatizados**                           | ✅     | 157 testes (153 da API + 4 do portal) + cobertura com piso |
+| **Docker**                                         | ✅     | 4 serviços, imagens não-root com health check              |
+| **Linter**                                         | ✅     | ESLint 10 com type-checking + Prettier                     |
+| Serverless                                         | ⏭️     | fora de escopo por decisão (documentada)                   |
+| **Bônus: portal web**                              | ✅     | `apps/web` (Next.js 16)                                    |
+| **Bônus: OpenAPI**                                 | ✅     | `/docs` e `/docs-json`                                     |
+| **Bônus: contrato compartilhado**                  | ✅     | `packages/contracts`                                       |
 
 ---
 
@@ -200,7 +214,8 @@ naporta-desafio/                        141 arquivos versionados
 | **Seed explícita**       | Banco nasce vazio                               | O que entra é sempre uma decisão consciente                                         |
 | **Migrations**           | Serviço separado no Compose                     | CLI do Prisma fora da imagem final                                                  |
 | **Cobertura**            | Piso configurado                                | A suíte é rede de segurança, não formulário                                         |
-| **Integração contínua**  | GitHub Actions, 3 jobs paralelos                | O mesmo pipeline que roda localmente — com Postgres de serviço para os e2e          |
+| **Integração contínua**  | GitHub Actions, 4 jobs paralelos                | O mesmo pipeline que roda localmente — com Postgres de serviço para os e2e          |
+| **E2E do portal**        | Playwright contra a API real                    | O navegador é o cliente de verdade — sem mocks, sem simulação                       |
 
 ---
 
@@ -222,28 +237,28 @@ naporta-desafio/                        141 arquivos versionados
 
 ## 7. Limitações conhecidas
 
-| Item                        | Situação                                                         |
-| --------------------------- | ---------------------------------------------------------------- |
-| **Rate limit distribuído**  | Em memória: com várias instâncias, o limite vale por instância   |
-| **Refresh por dispositivo** | A rotação é por sessão; falta listar/revogar dispositivos        |
-| **Histórico de itens**      | Ao trocar a lista de itens, os antigos são removidos fisicamente |
-| **Notificações**            | A mudança de status é síncrona; com e-mail/SMS viraria um job    |
-| **Observabilidade**         | Sem tracing (OpenTelemetry) nem métricas de negócio              |
-| **Testes de carga**         | Há teste de concorrência, falta k6/autocannon                    |
-| **Deploy automático**       | O CI valida e publica artefatos; o deploy em produção é manual   |
-| **Testes e2e do portal**    | Sem Playwright; o portal é exercitado manualmente e via API      |
+| Item                        | Situação                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| **Rate limit distribuído**  | Em memória: com várias instâncias, o limite vale por instância                 |
+| **Refresh por dispositivo** | A rotação é por sessão; falta listar/revogar dispositivos                      |
+| **Histórico de itens**      | Ao trocar a lista de itens, os antigos são removidos fisicamente               |
+| **Notificações**            | A mudança de status é síncrona; com e-mail/SMS viraria um job                  |
+| **Observabilidade**         | Sem tracing (OpenTelemetry) nem métricas de negócio                            |
+| **Testes de carga**         | Há teste de concorrência, falta k6/autocannon                                  |
+| **Deploy automático**       | O CI valida e publica artefatos; o deploy em produção é manual                 |
+| **Navegadores do e2e**      | A suíte do portal roda só no Chromium (Firefox/WebKit são uma linha de config) |
 
 ---
 
 ## 8. Próximos passos sugeridos
 
-1. **Testes e2e do portal com Playwright** — cobrindo login, criação e mudança de status
-2. **Rate limit com Redis** — para rodar múltiplas instâncias da API
-3. **Refresh tokens por dispositivo** — listar e revogar as sessões ativas
-4. **Histórico de itens** — `deleted_at` também nos itens, preservando a auditoria
-5. **Fila de notificações** — mudança de status publica um evento
-6. **Observabilidade** — tracing distribuído e métricas de negócio
-7. **Deploy automático** — a partir do CI, com promoção de imagem entre ambientes
+1. **Rate limit com Redis** — para rodar múltiplas instâncias da API
+2. **Refresh tokens por dispositivo** — listar e revogar as sessões ativas
+3. **Histórico de itens** — `deleted_at` também nos itens, preservando a auditoria
+4. **Fila de notificações** — mudança de status publica um evento
+5. **Observabilidade** — tracing distribuído e métricas de negócio
+6. **Deploy automático** — a partir do CI, com promoção de imagem entre ambientes
+7. **E2E do portal em mais navegadores** — Firefox e WebKit, além do Chromium
 
 ---
 
@@ -266,7 +281,8 @@ docker compose --profile seed run --rm seed   # com o Docker rodando
 npm run seed                                 # ou a partir do host
 
 # Testes
-npm run test:all
+npm run test:all              # unitários + e2e da API + e2e do portal
+npm run test:e2e:web          # só o e2e do portal (Playwright)
 ```
 
 **Credenciais da seed:** `admin@naporta.local` / `Admin@1234` (ADMIN) ·
