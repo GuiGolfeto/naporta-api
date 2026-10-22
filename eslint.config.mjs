@@ -63,6 +63,14 @@ export default tseslint.config(
     },
   },
 
+  // Scripts de linha de comando: o console é a interface do script.
+  {
+    files: ['prisma/**/*.ts', 'scripts/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
   // Arquivos de teste: relaxa regras que não agregam em testes
   {
     files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],

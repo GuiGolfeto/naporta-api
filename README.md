@@ -2,9 +2,9 @@
 
 Web API da **naPorta** para gestão de pedidos de entrega, construída com NestJS, Prisma e PostgreSQL.
 
-> **Status do projeto:** Módulos 0, 1, 2 e 3 concluídos — fundação, camada de dados,
-> autenticação e o CRUD de pedidos. A API já atende o escopo do desafio: pedidos com criação,
-> listagem filtrada, edição e exclusão lógica, protegidos por JWT.
+> **Status do projeto:** Módulos 0 a 4 concluídos — fundação, camada de dados, autenticação,
+> CRUD de pedidos e seed. A API já atende o escopo do desafio: pedidos com criação, listagem
+> filtrada, edição e exclusão lógica, protegidos por JWT.
 
 ---
 
@@ -101,22 +101,24 @@ Com o banco parado, o `/health` continua respondendo `200` e o `/health/ready` r
 
 ## Scripts
 
-| Script                            | Descrição                                     |
-| --------------------------------- | --------------------------------------------- |
-| `npm run dev`                     | API em modo watch (`nest start --watch`)      |
-| `npm run build`                   | Compila para `dist/`                          |
-| `npm run start:prod`              | Executa o build (`node dist/main.js`)         |
-| `npm run lint`                    | ESLint (falha se houver warning)              |
-| `npm run lint:fix`                | ESLint com autofix                            |
-| `npm run format` / `format:check` | Prettier                                      |
-| `npm test`                        | Testes unitários                              |
-| `npm run test:cov`                | Testes unitários + cobertura                  |
-| `npm run test:e2e`                | Testes e2e (Supertest)                        |
-| `npm run prisma:generate`         | Gera o Prisma Client                          |
-| `npm run prisma:migrate:dev`      | Cria/aplica migration em desenvolvimento      |
-| `npm run prisma:migrate`          | Aplica migrations (produção)                  |
-| `npm run prisma:studio`           | Prisma Studio                                 |
-| `npm run seed`                    | Popula o banco com dados fictícios (Módulo 4) |
+| Script                            | Descrição                                        |
+| --------------------------------- | ------------------------------------------------ |
+| `npm run dev`                     | API em modo watch (`nest start --watch`)         |
+| `npm run build`                   | Compila para `dist/`                             |
+| `npm run start:prod`              | Executa o build (`node dist/main.js`)            |
+| `npm run lint`                    | ESLint (falha se houver warning)                 |
+| `npm run lint:fix`                | ESLint com autofix                               |
+| `npm run format` / `format:check` | Prettier                                         |
+| `npm test`                        | Testes unitários                                 |
+| `npm run test:cov`                | Testes unitários + cobertura                     |
+| `npm run test:e2e`                | Testes e2e (Supertest)                           |
+| `npm run prisma:generate`         | Gera o Prisma Client                             |
+| `npm run prisma:migrate:dev`      | Cria/aplica migration em desenvolvimento         |
+| `npm run prisma:migrate`          | Aplica migrations (produção)                     |
+| `npm run prisma:studio`           | Prisma Studio                                    |
+| `npm run seed`                    | Popula o banco com dados fictícios (idempotente) |
+| `npm run seed:api`                | Popula o banco **passando pela API**             |
+| `npm run db:reset`                | Recria o schema do banco e roda a seed           |
 
 ---
 
@@ -219,6 +221,52 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 | **Entrada**                     | `ValidationPipe` global com `whitelist` e `forbidNonWhitelisted` — campo desconhecido é rejeitado com `422`.                                                                   |
 | **Segredos**                    | Segredos via `ConfigService` (nunca `process.env` espalhado); em produção, obrigatórios, distintos entre si e diferentes dos valores de desenvolvimento.                       |
 | **Transporte**                  | `helmet` com CSP/HSTS, CORS por whitelist e `trust proxy` para o rate limit funcionar atrás de proxy.                                                                          |
+
+---
+
+## Dados de demonstração (seed)
+
+> **A API nunca popula o banco sozinha.** O banco nasce **vazio** e os dados entram de duas
+> formas, sempre por comando explícito:
+>
+> | Comando            | Como popula                                          | Quando usar                                                                              |
+> | ------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+> | `npm run seed`     | direto no Postgres (script `prisma/seed.ts`)         | demonstração com histórico: 3 usuários e 60 pedidos, com entregas no passado e no futuro |
+> | `npm run seed:api` | **só via API** (HTTP, `scripts/populate-via-api.ts`) | inicialização usando exclusivamente a API pública — valida a API de ponta a ponta        |
+
+```bash
+# 1) popular direto no banco (idempotente: rodar de novo não duplica nada)
+npm run seed
+
+# 2) ou popular passando pela API (a API precisa estar no ar)
+npm run dev          # em outro terminal
+npm run seed:api
+
+# 3) recomeçar do zero (recria o schema e popula)
+npm run db:reset
+```
+
+A seed cria **3 usuários** e **60 pedidos** fictícios (nomes, CPFs/CNPJs, endereços e produtos
+inventados), com status coerentes com a data prevista e números `NP-AAAA-NNNNN` sequenciais:
+
+| Papel   | E-mail                   | Senha           |
+| ------- | ------------------------ | --------------- |
+| `ADMIN` | `admin@naporta.local`    | `Admin@1234`    |
+| `USER`  | `operador@naporta.local` | `Operador@1234` |
+| `USER`  | `ana@naporta.local`      | `Cliente@1234`  |
+
+Características da seed:
+
+- **Idempotente** — se já houver usuários, ela não altera nada e avisa no console;
+- **Reprodutível** — gerador pseudoaleatório com semente fixa: a mesma seed gera sempre os
+  mesmos dados;
+- **Coerente** — o status acompanha a data prevista (pedido antigo é `DELIVERED` ou `CANCELLED`,
+  pedido futuro é `PENDING`); os totais são calculados em `Decimal`, nunca em float;
+- **Com senhas reais** — hash argon2id, então dá para fazer login com as credenciais acima.
+
+O script `seed:api` cria apenas usuários `USER` e pedidos com entrega futura, porque a API não
+permite escolher o papel no cadastro e recusa data prevista no passado — para o administrador e
+o histórico, use `npm run seed`.
 
 ---
 

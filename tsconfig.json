@@ -13,7 +13,6 @@
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "incremental": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
@@ -28,6 +27,6 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "prisma/**/*.ts", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -126,13 +126,26 @@ perde o acesso; rate limit responde 429.
 funcionam; transição inválida → 409; pedido excluído responde 404 e some das listagens (mas
 continua na tabela); usuário alheio → 404; total calculado no servidor.
 
-### Módulo 4 — Seed
+### Módulo 4 — Seed ✅ CONCLUÍDO
 
-- `prisma/seed.ts` idempotente: 1 admin + 2 usuários + ~60 pedidos fictícios
-- Variedade: status variados, datas passadas/futuras, 1–5 itens por pedido, endereços BR plausíveis
-- Documentos CPF/CNPJ válidos para a validação passar
+- `prisma/seed.ts` — popula o banco **somente por comando explícito** (`npm run seed` /
+  `prisma db seed`); a aplicação **nunca** popula o banco sozinha (o banco nasce vazio)
+- `prisma/seed-data.ts` — dados fictícios: 3 usuários, 16 clientes, 10 endereços e 12 produtos
+  (nomes, CPFs/CNPJs com dígitos verificadores válidos e endereços inventados)
+- 60 pedidos com status coerente com a data prevista (passado → `DELIVERED`/`CANCELLED`,
+  futuro → `PENDING`/`CONFIRMED`), 1 a 5 itens cada, totais calculados em `Decimal`
+- Números `NP-AAAA-NNNNN` gerados pelo **mesmo** código da API (`nextOrderNumber`), sequenciais
+  por ano
+- Senhas com hash argon2id — as credenciais da seed funcionam no login
+- **Idempotente**: se já houver usuários, nada é alterado (avisa no console)
+- **Reprodutível**: gerador pseudoaleatório com semente fixa
+- `scripts/populate-via-api.ts` (`npm run seed:api`) — alternativa que popula **só pela API**
+  (HTTP), exercitando a API de ponta a ponta
+- `npm run db:reset` — recria o schema e roda a seed
 
-**Aceite**: `npm run seed` popula o banco; rodar 2x não duplica nem quebra.
+**Aceite**: `npm run seed` popula 3 usuários e 60 pedidos; rodar de novo não duplica nada; os
+pedidos aparecem na API com os filtros funcionando; login com as credenciais da seed funciona;
+a API sobe com o banco vazio sem popular nada.
 
 ### Módulo 5 — Testes automatizados
 

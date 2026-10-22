@@ -1,7 +1,7 @@
 {
   "name": "naporta-api",
   "version": "0.1.0",
-  "description": "Web API para a naPorta — gestão de pedidos de entrega",
+  "description": "Web API para a naPorta \u2014 gest\u00e3o de pedidos de entrega",
   "author": "naPorta",
   "private": true,
   "license": "UNLICENSED",
@@ -14,8 +14,8 @@
     "build": "nest build",
     "start": "nest start",
     "start:prod": "node dist/main.js",
-    "lint": "eslint \"{src,test,prisma}/**/*.ts\" --max-warnings 0",
-    "lint:fix": "eslint \"{src,test,prisma}/**/*.ts\" --fix",
+    "lint": "eslint \"{src,test,prisma,scripts}/**/*.ts\" --max-warnings 0",
+    "lint:fix": "eslint \"{src,test,prisma,scripts}/**/*.ts\" --fix",
     "format": "prettier --write \"**/*.{ts,mjs,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,mjs,json,md,yml,yaml}\"",
     "test": "vitest run",
@@ -29,6 +29,8 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
     "seed": "prisma db seed",
+    "seed:api": "tsx scripts/populate-via-api.ts",
+    "db:reset": "prisma migrate reset --force && npm run seed",
     "postinstall": "prisma generate"
   },
   "dependencies": {
