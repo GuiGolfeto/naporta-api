@@ -8,6 +8,7 @@ build/
 
 # Testes / cobertura
 coverage/
+coverage-e2e/
 .nyc_output/
 
 # Ambiente (mantém apenas o .env.example versionado)

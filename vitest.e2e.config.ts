@@ -22,8 +22,21 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage-e2e',
+      // Piso de cobertura: a suíte e2e exercita a aplicação inteira.
+      thresholds: {
+        statements: 75,
+        functions: 80,
+        lines: 75,
+        branches: 50,
+      },
       include: ['src/**/*.ts'],
-      exclude: ['src/generated/**', 'src/main.ts', '**/*.module.ts'],
+      exclude: [
+        'src/generated/**',
+        'src/main.ts',
+        'src/**/*.module.ts',
+        'src/**/*.spec.ts',
+        'src/**/dto/**',
+      ],
     },
   },
   plugins: [swc.vite()],

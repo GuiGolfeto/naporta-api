@@ -147,16 +147,23 @@ continua na tabela); usuário alheio → 404; total calculado no servidor.
 pedidos aparecem na API com os filtros funcionando; login com as credenciais da seed funciona;
 a API sobe com o banco vazio sem popular nada.
 
-### Módulo 5 — Testes automatizados
+### Módulo 5 — Testes automatizados ✅ CONCLUÍDO
 
-- **Unit**: services de auth e orders, validadores (CPF/CNPJ, transições), utilitários
-  (paginação, sanitização de filtros)
-- **E2E** (Supertest): fluxo de auth, CRUD de pedido, filtros, soft delete, erros
-  (401/403/404/409/422), paginação
-- Postgres de teste isolado (service `db-test` no compose, profile `test`)
-- Relatório de cobertura
+- **10 arquivos de teste unitário (64 testes)**: transições de status, validação de CPF/CNPJ,
+  precisão decimal (`Decimal`), mapeamento de erros do Prisma → HTTP, parsing de duração,
+  configuração do throttler e hash de senha (argon2id)
+- **8 arquivos de teste e2e/integração (84 testes)**: autenticação (register/login/refresh/
+  logout/me, rotação, detecção de reuso, conta inativada), CRUD de pedidos (filtros, paginação,
+  ordenação, transições, propriedade, soft delete), seed, rate limit, concorrência e contrato de erro
+- `npm run test:all` roda as duas suítes; `npm run test:cov` e `npm run test:e2e:cov` geram relatório
+- Cobertura da suíte e2e: **78% statements / 85% functions / 79% lines** com **pisos
+  configurados** (75/80/75) — a suíte falha se a qualidade cair
+- Setup global do Vitest aplica as migrations no banco de testes automaticamente
+- Datas dos testes relativas a "hoje" — a suíte não expira com o tempo
+- `GET /users` (somente `ADMIN`) exercita o `RolesGuard`, que estava sem uso
 
-**Aceite**: `npm test` e `npm run test:e2e` passam; cobertura reportada.
+**Aceite**: `npm test` e `npm run test:e2e` verdes; cobertura acima do piso; a suíte prova
+soft delete real, numerador sem colisão sob concorrência e precisão de dinheiro.
 
 ### Módulo 6 — Docker
 

@@ -124,16 +124,69 @@ Com o banco parado, o `/health` continua respondendo `200` e o `/health/ready` r
 
 ## Testes
 
+A suíte é dividida em duas partes, com finalidades diferentes:
+
+| Suíte                | Comando            | Banco                | O que cobre                                                                                                                                                  |
+| -------------------- | ------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Unitária**         | `npm test`         | não precisa          | Funções puras: transições de status, CPF/CNPJ, precisão decimal, mapeamento de erros do Prisma, parsing de duração, configuração do throttler, hash de senha |
+| **E2E / integração** | `npm run test:e2e` | precisa do `db-test` | A aplicação inteira via HTTP: autenticação, refresh rotativo, CRUD de pedidos, filtros, paginação, propriedade, soft delete, seed, rate limit e concorrência |
+
 ```bash
-# Unitários (não precisam de banco)
+# Unitários (rápidos, sem banco)
 npm test
 
 # E2E (precisam do banco de testes)
 docker compose --profile test up -d db-test
 npm run test:e2e
+
+# As duas suítes + cobertura
+npm run test:all
+npm run test:cov        # cobertura da suíte unitária
+npm run test:e2e:cov    # cobertura da suíte e2e (a que importa)
 ```
 
-O banco de testes (`naporta_test`) é isolado do banco de desenvolvimento e roda na porta `5433` por padrão.
+O banco de testes (`naporta_test`) é isolado do banco de desenvolvimento e roda na porta `5433`
+por padrão. As migrations são aplicadas automaticamente pelo _setup global_ do Vitest, antes da
+suíte — não é preciso rodar nada manualmente.
+
+### Cobertura
+
+| Métrica    | Suíte e2e | Piso configurado |
+| ---------- | --------- | ---------------- |
+| Statements | **78%**   | 75%              |
+| Branches   | **53%**   | 50%              |
+| Functions  | **85%**   | 80%              |
+| Lines      | **79%**   | 75%              |
+
+O relatório em HTML fica em `coverage-e2e/index.html` (`npm run test:e2e:cov`). Os pisos de
+cobertura fazem o `npm run test:e2e:cov` **falhar** se a qualidade cair — a suíte é a rede de
+segurança do código, não um formality check.
+
+### O que a suíte garante (e não só "passa")
+
+| Cenário                  | Como é verificado                                                            |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| Soft delete de verdade   | A linha continua na tabela (com `deleted_at` preenchido) e some das leituras |
+| Numerador sem colisão    | 10 criações **simultâneas** de pedido → 10 números distintos                 |
+| Precisão de dinheiro     | `3 × 0.10 + 0.20 = 0.50` (e não `0.5000000000000001`)                        |
+| Rotação de refresh token | O token usado é revogado; reusá-lo revoga todas as sessões do usuário        |
+| Enumeração de contas     | E-mail inexistente e senha errada devolvem a **mesma** mensagem              |
+| Propriedade do pedido    | Pedido de outra pessoa → `404` (não `403`) em leitura, edição e exclusão     |
+| Autorização por papel    | Usuário comum em rota de admin → `403`; admin → `200`                        |
+| Rate limit               | Acima do limite → `429` com `Retry-After` e corpo no contrato da API         |
+| Contrato de erro         | Toda resposta de erro tem o mesmo formato (4xx e 5xx)                        |
+| Seed                     | Banco nasce vazio; a seed é idempotente e gera números válidos               |
+| Datas                    | A suíte usa datas relativas a "hoje" — ela não expira com o tempo            |
+
+### Ferramentas
+
+| Ferramenta              | Papel                                                                  |
+| ----------------------- | ---------------------------------------------------------------------- |
+| **Vitest**              | Runner das duas suítes                                                 |
+| **Supertest**           | Requisições HTTP contra a aplicação Nest em memória                    |
+| **unplugin-swc**        | Compilação dos `.ts` com metadata de decorator (o esbuild não emite)   |
+| **@vitest/coverage-v8** | Cobertura via V8 (sem instrumentação)                                  |
+| **`@nestjs/testing`**   | Sobe a aplicação real — os e2e testam a mesma configuração de produção |
 
 ---
 

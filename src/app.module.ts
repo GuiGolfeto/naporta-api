@@ -15,6 +15,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard.js';
 import { HealthModule } from './modules/health/health.module.js';
 import { OrdersModule } from './modules/orders/orders.module.js';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
+import { UsersModule } from './modules/users/users.module.js';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { PrismaModule } from './modules/prisma/prisma.module.js';
     PrismaModule,
     AuthModule,
     OrdersModule,
+    UsersModule,
     HealthModule,
   ],
   providers: [
