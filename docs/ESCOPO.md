@@ -1,7 +1,8 @@
 # Escopo — API naPorta (Desafio Backend)
 
-> Documento de planejamento. Este arquivo não faz parte da entrega final (pode ser removido
-> ou incorporado ao `README.md` na Módulo 7).
+> Documento de planejamento, mantido ao lado do `ROADMAP.md` e do documento técnico.
+> O `README.md` da raiz é a porta de entrada do projeto; este arquivo registra o
+> escopo original, as revisões e o que ficou fora.
 
 ## Identidade do projeto
 
@@ -175,7 +176,7 @@ soft delete real, numerador sem colisão sob concorrência e precisão de dinhei
 
 ### Módulo 7 — Documentação ✅ CONCLUÍDO
 
-- `README.md` reescrito como porta de entrada do projeto: sumário, "como avaliar em 5 minutos",
+- `README.md` (raiz) reescrito como porta de entrada do projeto: sumário, "como avaliar em 5 minutos",
   setup do zero (local e Docker), arquitetura (Mermaid), referência da API, segurança, seed,
   modelo de dados (ER), testes, Docker, variáveis de ambiente, decisões justificadas por tema e
   limitações/próximos passos

@@ -36,7 +36,8 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 
 > 📍 **Documentos**
 >
-> - [ROADMAP.md](./ROADMAP.md) — linha do tempo por módulo, entregas, decisões, números e limitações
+> - [docs/ROADMAP.md](./docs/ROADMAP.md) — linha do tempo por módulo, entregas, decisões, números e limitações
+> - [docs/ESCOPO.md](./docs/ESCOPO.md) — escopo planejado, revisões e o que ficou fora
 > - [docs/documento-tecnico.pdf](./docs/documento-tecnico.pdf) — documento técnico completo
 >   (23 páginas, com diagramas). Para regerar: `npm run docs:pdf`
 

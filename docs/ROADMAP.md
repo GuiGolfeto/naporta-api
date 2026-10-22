@@ -8,6 +8,14 @@ módulo, decisões técnicas, números do projeto e o que ficou de fora.
 > **Entregue:** o escopo completo **mais** um portal web real consumindo a API, um pacote de
 > contrato compartilhado e documentação OpenAPI gerada do código.
 
+**Documentos relacionados**
+
+| Documento                                          | Conteúdo                                                                 |
+| -------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`../README.md`](../README.md)                     | Porta de entrada do projeto: como executar, referência da API e decisões |
+| [`ESCOPO.md`](./ESCOPO.md)                         | Escopo planejado, revisões e o que ficou fora                            |
+| [`documento-tecnico.pdf`](./documento-tecnico.pdf) | Documento técnico completo (23 páginas, com diagramas)                   |
+
 ---
 
 ## 1. Visão geral
@@ -146,7 +154,7 @@ naporta-desafio/                        134 arquivos versionados
 | Banco relacional                                   | ✅     | PostgreSQL 16 (Docker)                                   |
 | ORM                                                | ✅     | Prisma 7                                                 |
 | Rotas REST                                         | ✅     | 10 endpoints versionados em `/api/v1`                    |
-| README com execução e scripts                      | ✅     | `README.md` (+ `apps/web/README.md`)                     |
+| README com execução e scripts                      | ✅     | `README.md` (raiz) (+ `apps/web/README.md`)              |
 | Seed com pedidos fictícios                         | ✅     | `prisma/seed.ts` (por comando)                           |
 | Criar / listar / filtrar / editar / excluir pedido | ✅     | filtro por número, status e período                      |
 | Estrutura de dados do pedido                       | ✅     | cliente, endereço, itens, data prevista, data de criação |

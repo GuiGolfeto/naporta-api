@@ -17,6 +17,9 @@ coverage
 .gitignore
 .github
 README.md
+docs/
+ESCOPO.md
+ROADMAP.md
 Dockerfile
 .dockerignore
 docker-compose.yml

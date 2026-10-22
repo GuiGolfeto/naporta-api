@@ -20,7 +20,9 @@ coverage-e2e
 .gitignore
 .github
 README.md
+docs/
 ESCOPO.md
+ROADMAP.md
 .vscode
 .idea
 
