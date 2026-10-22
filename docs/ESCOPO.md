@@ -145,6 +145,10 @@ continua na tabela); usuário alheio → 404; total calculado no servidor.
 - `npm run db:reset` — recria o schema e roda a seed
 - Serviço `seed` no Compose (profile `seed`): popula o banco do Docker com um comando, sem
   carregar o CLI do Prisma na imagem final da API
+  (`docker compose --profile seed run --rm seed`)
+
+**Total da suíte**: 64 testes unitários + 89 e2e = **153**, com cobertura de 78% e piso
+configurado (a suíte falha se a qualidade cair).
 
 **Aceite**: `npm run seed` popula 3 usuários e 60 pedidos; rodar de novo não duplica nada; os
 pedidos aparecem na API com os filtros funcionando; login com as credenciais da seed funciona;

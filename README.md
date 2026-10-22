@@ -11,7 +11,7 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 | **Documentação interativa** | http://localhost:3000/docs (Swagger UI)                                                                                                       |
 | **Health check**            | http://localhost:3000/api/v1/health                                                                                                           |
 | **Testes**                  | 64 unitários · 89 e2e · cobertura de 78% (pisos configurados)                                                                                 |
-| **Imagem Docker**           | 179 MB, usuário sem privilégios, health check                                                                                                 |
+| **Imagem Docker**           | 175 MB (API) · 97 MB (portal), usuário sem privilégios, health check                                                                          |
 | **Integração contínua**     | ![CI](https://github.com/GuiGolfeto/naporta-api/actions/workflows/ci.yml/badge.svg) — lint, type-check, build, 153 testes e build das imagens |
 
 ---
@@ -871,7 +871,7 @@ As escolhas que mais definem a solução — e o motivo de cada uma.
 | **Validação de ambiente**   | Joi **antes** do DI subir                         | Falha rápido e com mensagem clara, em vez de erro em produção. Em produção, segredos obrigatórios, distintos e diferentes dos de desenvolvimento. |
 | **Seed explícita**          | `npm run seed` / `npm run seed:api`               | A API **nunca** popula o banco sozinha: o banco nasce vazio e o que entra é sempre explícito.                                                     |
 | **Migrations como serviço** | Serviço `migrate` separado no Compose             | O CLI do Prisma não está na imagem final; a API só sobe depois que as migrations são aplicadas.                                                   |
-| **Imagem**                  | Multi-stage, usuário `node`, `tini`, health check | 179 MB, sem privilégios, encerramento gracioso e sinal correto.                                                                                   |
+| **Imagem**                  | Multi-stage, usuário `node`, `tini`, health check | 175 MB, sem privilégios, encerramento gracioso e sinal correto.                                                                                   |
 | **Logs**                    | `LOG_FORMAT` (`pretty`/`json`)                    | Legível no desenvolvimento, estruturado no container. O `authorization` é sempre censurado.                                                       |
 | **Cobertura com piso**      | Piso configurado (75/80/75)                       | A suíte **falha** se a qualidade cair — é rede de segurança, não formulário.                                                                      |
 
@@ -921,15 +921,15 @@ prod-deps → npm ci --omit=dev
 runtime → imagem final: só o necessário
 ```
 
-| Propriedade      | Detalhe                                                                                              |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| **Usuário**      | `node` (uid 1000) — sem privilégios (`USER node`)                                                    |
-| **PID 1**        | `tini`: encaminha o `SIGTERM` e recolhe processos zumbis                                             |
-| **Health check** | `HEALTHCHECK` no Dockerfile e no compose, usando o `fetch` nativo do Node (sem `curl` na imagem)     |
-| **Tamanho**      | **179 MB** (imagem final) — o CLI do Prisma, o Prisma Studio e os dev tools são removidos do runtime |
-| **Segredos**     | O `.env` **nunca** entra na imagem (`.dockerignore`); as variáveis chegam por `environment:`         |
-| **Logs**         | JSON no container (`LOG_FORMAT=json`), legível no desenvolvimento (`LOG_FORMAT=pretty`)              |
-| **Base**         | `node:24-bookworm-slim` (glibc) — o binário pré-compilado do argon2 é usado sem compilar nada        |
+| Propriedade      | Detalhe                                                                                                          |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Usuário**      | `node` (uid 1000) — sem privilégios (`USER node`)                                                                |
+| **PID 1**        | `tini`: encaminha o `SIGTERM` e recolhe processos zumbis                                                         |
+| **Health check** | `HEALTHCHECK` no Dockerfile e no compose, usando o `fetch` nativo do Node (sem `curl` na imagem)                 |
+| **Tamanho**      | **175 MB** (API) e **97 MB** (portal) — o CLI do Prisma, o Prisma Studio e os dev tools são removidos do runtime |
+| **Segredos**     | O `.env` **nunca** entra na imagem (`.dockerignore`); as variáveis chegam por `environment:`                     |
+| **Logs**         | JSON no container (`LOG_FORMAT=json`), legível no desenvolvimento (`LOG_FORMAT=pretty`)                          |
+| **Base**         | `node:24-bookworm-slim` (glibc) — o binário pré-compilado do argon2 é usado sem compilar nada                    |
 
 ### Migrations como serviço separado
 

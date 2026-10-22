@@ -21,7 +21,7 @@ módulo, decisões técnicas, números do projeto e o que ficou de fora.
 ## 1. Visão geral
 
 ```
-naporta-desafio/                        134 arquivos versionados
+naporta-desafio/                        141 arquivos versionados
 ├── apps/
 │   ├── api/                            Web API — NestJS 12 + Prisma 7 + PostgreSQL 16
 │   └── web/                            Portal — Next.js 16 + React 19 + Tailwind 4
@@ -32,14 +32,14 @@ naporta-desafio/                        134 arquivos versionados
 
 | Números               |                                                                                   |
 | --------------------- | --------------------------------------------------------------------------------- |
-| Linhas de código      | **8.219** (API 3.883 · testes 1.790 · portal 1.709 · contratos 263)               |
+| Linhas de código      | **8.300** (API 3.883 · testes 1.790 · portal 1.790 · contratos 263)               |
 | Testes                | **153** (64 unitários + 89 e2e)                                                   |
 | Cobertura (suíte e2e) | **78%** statements · **85%** functions · **79%** lines — com **piso configurado** |
 | Endpoints             | **10**                                                                            |
 | Telas do portal       | **4**                                                                             |
 | Tabelas / índices     | **6** / **19**                                                                    |
 | Migrations            | **1** (versionada)                                                                |
-| Commits               | **11** (todos locais — nada enviado ao GitHub)                                    |
+| Commits               | **20** (todos locais — nada enviado ao GitHub)                                    |
 | Imagens Docker        | API **175 MB** · portal **97 MB** (usuário sem privilégios, health check)         |
 
 ---
@@ -59,6 +59,9 @@ naporta-desafio/                        134 arquivos versionados
 | 8   | **CI (bônus)**               | Integração contínua no GitHub Actions: qualidade, testes com Postgres de serviço e build das imagens         | `74038ac` |
 | 9   | **Monorepo + portal**        | Reorganização em workspaces, `packages/contracts`, portal Next.js completo                                   | `f71ee69` |
 | 10  | **Revisão final**            | Consistência de scripts/variáveis/links/estrutura e validação do portal de ponta a ponta                     | `d492a1d` |
+| 11  | **Documento técnico**        | PDF de 23 páginas com diagramas de arquitetura e ER, gerado do HTML versionado                               | `1f0276b` |
+| 12  | **Monorepo (ajustes)**       | Escopo e roadmap movidos para `docs/`; serviço `seed` no Compose; exemplos de shell compatíveis com fish     | `b353626` |
+| 13  | **Portal robusto**           | Fronteiras de erro (`error.tsx`, `not-found.tsx`) e id inválido tratado como 404                             | `b2a1783` |
 
 ---
 

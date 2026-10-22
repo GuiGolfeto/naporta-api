@@ -431,7 +431,7 @@
         <div class="cover-stat"><b>10</b><span>endpoints REST</span></div>
         <div class="cover-stat"><b>153</b><span>testes automatizados</span></div>
         <div class="cover-stat"><b>6</b><span>tabelas · 19 índices</span></div>
-        <div class="cover-stat"><b>8.219</b><span>linhas de código</span></div>
+        <div class="cover-stat"><b>8.300</b><span>linhas de código</span></div>
       </div>
 
       <div class="cover-stack">
@@ -1507,7 +1507,16 @@ RETURNING last_number;</code></pre>
         </div>
       </div>
 
-      <h3>8.3 O contrato compartilhado</h3>
+      <h3>8.3 Tratamento de erro no portal</h3>
+      <p>
+        A página de detalhe tem duas camadas de proteção: um identificador inválido (a API recusa com
+        <code>400</code>) é tratado como <em>pedido inexistente</em> e leva à página de "não
+        encontrado" (<code>404</code>); qualquer outra falha da API cai na fronteira de erro da rota
+        (<code>error.tsx</code>), que explica o que houve e oferece "tentar de novo" e "voltar para
+        os pedidos" — em vez de um 500 sem contexto.
+      </p>
+
+      <h3>8.4 O contrato compartilhado</h3>
       <p>
         O portal e a API conversam por HTTP, mas os <em>tipos</em> vêm do mesmo lugar:
         <code>packages/contracts</code>. As classes de resposta da API implementam esses tipos —
@@ -1703,6 +1712,15 @@ export class OrderResponse implements OrderContract {
             <td>Portal</td>
             <td>97 MB, saída <code>standalone</code> do Next, usuário sem privilégios, health check em <code>/login</code>.</td>
           </tr>
+          <tr>
+            <td><code>seed</code></td>
+            <td>Popula o banco com dados fictícios</td>
+            <td>
+              Atrás do profile <code>seed</code>: <code>docker compose up</code> continua subindo o banco
+              <strong>vazio</strong>. Usa a imagem de build — a imagem final da API não carrega o CLI do
+              Prisma.
+            </td>
+          </tr>
         </tbody>
       </table>
 
@@ -1720,7 +1738,49 @@ runtime   → imagem final: dist + node_modules enxuto, usuário node</code></pr
         migrations rodam no serviço separado <code>migrate</code>.
       </p>
 
-      <h3>10.3 Operação</h3>
+      <h3>10.3 Integração contínua</h3>
+      <p>
+        O workflow <code>.github/workflows/ci.yml</code> roda a cada push e pull request, em três jobs
+        paralelos:
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%">Job</th>
+            <th style="width: 34%">Passos</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>qualidade</strong></td>
+            <td>
+              <code>npm ci</code> → Prisma Client → contratos → <code>lint</code> →
+              <code>format:check</code> → <code>typecheck</code> → <code>build</code>
+            </td>
+            <td>O type-check depende dos tipos compilados do pacote de contratos.</td>
+          </tr>
+          <tr>
+            <td><strong>testes</strong></td>
+            <td>
+              Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso) → artefato
+            </td>
+            <td>O banco de testes é isolado; o de desenvolvimento nunca é tocado.</td>
+          </tr>
+          <tr>
+            <td><strong>docker</strong></td>
+            <td>Build das imagens da API e do portal</td>
+            <td>Valida os Dockerfiles a cada push.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        O banco do GitHub Actions é um <em>serviço</em> do runner: as migrations são aplicadas pelo
+        setup global da suíte, e o ambiente de teste se recusa a rodar contra um banco que não seja
+        de teste.
+      </p>
+
+      <h3>10.4 Operação</h3>
       <ul>
         <li>
           <strong>Configuração validada no boot</strong> — variáveis obrigatórias ausentes ou
@@ -2004,7 +2064,15 @@ npm run test:all    # as duas suítes
 npm run test:cov    # cobertura da suíte unitária
 npm run test:e2e:cov  # cobertura da suíte e2e (com piso)</code></pre>
 
-      <h3>13.5 Credenciais da seed</h3>
+      <h3>13.5 Shell dos exemplos</h3>
+      <p>
+        Os comandos desta seção usam <strong>bash/zsh</strong>. No <strong>fish</strong>, a
+        atribuição de variável tem outra sintaxe — troque <code>TOKEN=$(...)</code> por
+        <code>set TOKEN (...)</code>. O restante (comandos, <code>&&</code>, continuação de linha) é
+        igual nos dois.
+      </p>
+
+      <h3>13.6 Credenciais da seed</h3>
       <table>
         <thead>
           <tr>
