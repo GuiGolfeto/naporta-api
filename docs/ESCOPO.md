@@ -191,11 +191,20 @@ soft delete real, numerador sem colisão sob concorrência e precisão de dinhei
 **Aceite**: um avaliador clone o repositório e, seguindo apenas o README, sobe a API do zero,
 entende as decisões técnicas e exercita a API pela documentação interativa.
 
-### Módulo 8 — Bônus (revisado) ⏭️ CI adiado
+### Módulo 8 — Bônus: CI ✅ CONCLUÍDO
 
-- ~~CI: `.github/workflows/ci.yml`~~ → **adiado a pedido** (a esteira é trivial de adicionar
-  depois: os scripts `lint`, `typecheck`, `test` e `build` já existem na raiz)
-- Rate limiting já no Módulo 2; extras apenas se houver folga
+- `.github/workflows/ci.yml` — integração contínua no GitHub Actions, em três jobs paralelos:
+  - **qualidade**: `npm ci` → Prisma Client → contratos → `lint` → `format:check` →
+    `typecheck` → `build`
+  - **testes**: Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso
+    configurado) → artefato publicado
+  - **docker**: build das imagens da API e do portal
+- Aciona em `push` na `main`, em pull requests e por execução manual (`workflow_dispatch`)
+- Concorrência: execuções do mesmo branch são canceladas (`cancel-in-progress`)
+- O banco de testes é um serviço isolado do runner — o de desenvolvimento nunca é tocado
+
+**Aceite**: o workflow executa lint, formatação, type-check, build, as duas suítes e o build das
+imagens; o repositório fica verde no GitHub.
 
 ### Módulo 9 — Monorepo + portal web ✅ CONCLUÍDO
 

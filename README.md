@@ -6,12 +6,13 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 > **Escopo do desafio:** pedidos com criação, listagem filtrável, edição e exclusão lógica,
 > com autenticação por Bearer token, banco relacional, ORM, seed e documentação.
 
-|                             |                                                               |
-| --------------------------- | ------------------------------------------------------------- |
-| **Documentação interativa** | http://localhost:3000/docs (Swagger UI)                       |
-| **Health check**            | http://localhost:3000/api/v1/health                           |
-| **Testes**                  | 64 unitários · 89 e2e · cobertura de 78% (pisos configurados) |
-| **Imagem Docker**           | 179 MB, usuário sem privilégios, health check                 |
+|                             |                                                                                                                                               |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Documentação interativa** | http://localhost:3000/docs (Swagger UI)                                                                                                       |
+| **Health check**            | http://localhost:3000/api/v1/health                                                                                                           |
+| **Testes**                  | 64 unitários · 89 e2e · cobertura de 78% (pisos configurados)                                                                                 |
+| **Imagem Docker**           | 179 MB, usuário sem privilégios, health check                                                                                                 |
+| **Integração contínua**     | ![CI](https://github.com/GuiGolfeto/naporta-api/actions/workflows/ci.yml/badge.svg) — lint, type-check, build, 153 testes e build das imagens |
 
 ---
 
@@ -953,9 +954,22 @@ O que ficou de fora e o que eu faria a seguir, em ordem de valor:
 | 4          | **Histórico de itens**                      | Ao trocar a lista de itens, os antigos são removidos fisicamente (o pedido é soft delete). Com histórico, eles também teriam `deleted_at`. |
 | 5          | **Observabilidade**                         | Tracing (OpenTelemetry) e métricas de negócio (pedidos por status, tempo médio de entrega).                                                |
 | 6          | **Testes de carga**                         | O teste de concorrência cobre 10 pedidos; falta uma suíte com k6 ou autocannon.                                                            |
+| 7          | **Deploy automático**                       | O CI valida e publica artefatos, mas o deploy em produção ainda é manual.                                                                  |
 
 **Fora do escopo por decisão:** serverless (o enunciado lista como bônus, mas a stack com
 long-running container é mais simples de operar e de testar), integração com transportadoras e
 busca por CEP em tempo real.
+
+### Integração contínua
+
+O workflow `.github/workflows/ci.yml` roda a cada push e pull request, em três jobs paralelos:
+
+| Job           | O que faz                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------- |
+| **qualidade** | `npm ci` → Prisma Client → contratos → `lint` → `format:check` → `typecheck` → `build`          |
+| **testes**    | Postgres 16 de serviço → suíte unitária → suíte e2e → cobertura (com piso) → artefato publicado |
+| **docker**    | build das imagens da API e do portal                                                            |
+
+O banco de testes é um serviço isolado do GitHub Actions: o de desenvolvimento nunca é tocado.
 
 ---

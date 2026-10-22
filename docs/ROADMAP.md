@@ -56,7 +56,7 @@ naporta-desafio/                        134 arquivos versionados
 | 5   | **Testes & cobertura**       | Consolidação da suíte, cobertura com piso, testes de concorrência e precisão                                 | `850630c` |
 | 6   | **Docker**                   | Imagem multi-stage da API, serviço de migrations, stack completa                                             | `0b0a9b1` |
 | 7   | **Documentação**             | OpenAPI/Swagger gerado do código + README reescrito                                                          | `f920840` |
-| 8   | ~~CI~~                       | **Adiado a pedido** (os scripts já existem na raiz)                                                          | —         |
+| 8   | **CI (bônus)**               | Integração contínua no GitHub Actions: qualidade, testes com Postgres de serviço e build das imagens         | `74038ac` |
 | 9   | **Monorepo + portal**        | Reorganização em workspaces, `packages/contracts`, portal Next.js completo                                   | `f71ee69` |
 | 10  | **Revisão final**            | Consistência de scripts/variáveis/links/estrutura e validação do portal de ponta a ponta                     | `d492a1d` |
 
@@ -197,6 +197,7 @@ naporta-desafio/                        134 arquivos versionados
 | **Seed explícita**       | Banco nasce vazio                               | O que entra é sempre uma decisão consciente                                         |
 | **Migrations**           | Serviço separado no Compose                     | CLI do Prisma fora da imagem final                                                  |
 | **Cobertura**            | Piso configurado                                | A suíte é rede de segurança, não formulário                                         |
+| **Integração contínua**  | GitHub Actions, 3 jobs paralelos                | O mesmo pipeline que roda localmente — com Postgres de serviço para os e2e          |
 
 ---
 
@@ -226,20 +227,20 @@ naporta-desafio/                        134 arquivos versionados
 | **Notificações**            | A mudança de status é síncrona; com e-mail/SMS viraria um job    |
 | **Observabilidade**         | Sem tracing (OpenTelemetry) nem métricas de negócio              |
 | **Testes de carga**         | Há teste de concorrência, falta k6/autocannon                    |
-| **CI/CD**                   | Adiado a pedido — os scripts já existem na raiz                  |
+| **Deploy automático**       | O CI valida e publica artefatos; o deploy em produção é manual   |
 | **Testes e2e do portal**    | Sem Playwright; o portal é exercitado manualmente e via API      |
 
 ---
 
 ## 8. Próximos passos sugeridos
 
-1. **CI no GitHub Actions** — `lint → typecheck → test → build` (os scripts já existem)
-2. **Testes e2e do portal com Playwright** — cobrindo login, criação e mudança de status
-3. **Rate limit com Redis** — para rodar múltiplas instâncias da API
-4. **Refresh tokens por dispositivo** — listar e revogar as sessões ativas
-5. **Histórico de itens** — `deleted_at` também nos itens, preservando a auditoria
-6. **Fila de notificações** — mudança de status publica um evento
-7. **Observabilidade** — tracing distribuído e métricas de negócio
+1. **Testes e2e do portal com Playwright** — cobrindo login, criação e mudança de status
+2. **Rate limit com Redis** — para rodar múltiplas instâncias da API
+3. **Refresh tokens por dispositivo** — listar e revogar as sessões ativas
+4. **Histórico de itens** — `deleted_at` também nos itens, preservando a auditoria
+5. **Fila de notificações** — mudança de status publica um evento
+6. **Observabilidade** — tracing distribuído e métricas de negócio
+7. **Deploy automático** — a partir do CI, com promoção de imagem entre ambientes
 
 ---
 
