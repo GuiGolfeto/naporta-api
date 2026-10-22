@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Lint, type-check e build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      # --ignore-scripts: o postinstall (prisma generate) roda no passo seguinte
+      - run: npm ci --ignore-scripts
+
+      - run: npm run prisma:generate
+
+      # o type-check da API e do portal depende dos tipos compilados do contrato
+      - run: npm run build:contracts
+
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm run build
+
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: naporta
+          POSTGRES_PASSWORD: naporta_test_password
+          POSTGRES_DB: naporta_test
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U naporta -d naporta_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://naporta:naporta_test_password@localhost:5432/naporta_test
+      DATABASE_URL_TEST: postgresql://naporta:naporta_test_password@localhost:5432/naporta_test
+      JWT_SECRET: ci-only-access-secret-000000000000000000000
+      JWT_REFRESH_SECRET: ci-only-refresh-secret-00000000000000000000
+      CORS_ORIGINS: http://localhost:3000
+      TRUST_PROXY: '0'
+      LOG_LEVEL: info
+      LOG_FORMAT: json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+      - run: npm run prisma:generate
+      - run: npm run build:contracts
+
+      - name: Testes unitários
+        run: npm test
+
+      - name: Testes e2e
+        run: npm run test:e2e
+
+      - name: Cobertura (com piso configurado)
+        run: npm run test:e2e:cov
+
+      - name: Publica o relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura
+          path: apps/api/coverage-e2e
+          retention-days: 7
+
+  docker:
+    name: Imagens Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build da imagem da API
+        run: docker build -f apps/api/Dockerfile -t naporta-api:ci .
+      - name: Build da imagem do portal
+        run: docker build -f apps/web/Dockerfile -t naporta-web:ci .
