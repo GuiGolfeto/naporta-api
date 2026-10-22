@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+
+/*
+ * Tokens do tema.
+ *
+ * A paleta segue o padrão do Tailwind 4; o accent da marca é o `emerald`
+ * (entregas) e o `slate` para a navegação.
+ */
+@theme {
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+}
+
+/* Foco visível e consistente (acessibilidade de teclado). */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-emerald-600;
+}
+
+/* Tabela densa de pedidos. */
+table.orders {
+  @apply w-full border-collapse text-sm;
+}
+
+table.orders th {
+  @apply border-b border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs font-semibold tracking-wide text-slate-500 uppercase;
+}
+
+table.orders td {
+  @apply border-b border-slate-100 px-4 py-3 align-middle;
+}
+
+table.orders tbody tr:hover {
+  @apply bg-slate-50;
+}

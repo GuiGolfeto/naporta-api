@@ -165,7 +165,7 @@ a API sobe com o banco vazio sem popular nada.
 **Aceite**: `npm test` e `npm run test:e2e` verdes; cobertura acima do piso; a suíte prova
 soft delete real, numerador sem colisão sob concorrência e precisão de dinheiro.
 
-### Módulo 6 — Docker
+### Módulo 6 — Docker ✅ CONCLUÍDO
 
 - `Dockerfile` multi-stage (deps → build → runtime), usuário **não-root**, `HEALTHCHECK`
 - Entrypoint executa `prisma migrate deploy` antes de subir a API
@@ -190,19 +190,67 @@ soft delete real, numerador sem colisão sob concorrência e precisão de dinhei
 **Aceite**: um avaliador clone o repositório e, seguindo apenas o README, sobe a API do zero,
 entende as decisões técnicas e exercita a API pela documentação interativa.
 
-### Módulo 8 — Bônus
+### Módulo 8 — Bônus (revisado) ⏭️ CI adiado
 
-- CI: `.github/workflows/ci.yml` (lint → test → build) — **criado localmente, sem push**
+- ~~CI: `.github/workflows/ci.yml`~~ → **adiado a pedido** (a esteira é trivial de adicionar
+  depois: os scripts `lint`, `typecheck`, `test` e `build` já existem na raiz)
 - Rate limiting já no Módulo 2; extras apenas se houver folga
 
-**Aceite**: workflow executa os passos localmente com sucesso (`act`/push manual sob comando).
+### Módulo 9 — Monorepo + portal web ✅ CONCLUÍDO
+
+**Monorepo** (npm workspaces, sem Turborepo/Nx):
+
+```
+naporta-desafio/
+├── apps/api/            # ← a API NestJS (movida da raiz)
+├── apps/web/            # ← NOVO: portal Next.js 16
+├── packages/contracts/  # ← NOVO: contrato de dados (tipos + transições de status)
+├── docker-compose.yml   # db + migrate + api + web
+└── package.json         # workspaces
+```
+
+- API movida com `git mv` (histórico preservado); Dockerfiles, compose, tsconfig, scripts e
+  `.env` ajustados — **verificados a cada passo** (lint, typecheck, build, unitários, e2e e
+  stack Docker)
+- `packages/contracts` com o contrato da API: as classes de resposta da API o **implementam**,
+  então uma mudança de formato quebra a compilação do portal; as regras de transição de status
+  também moram lá (a API valida, o portal oferece as ações)
+- O `.env` fica na **raiz** e é carregado pelos dois apps (`@nestjs/config` e `next.config.ts`)
+
+**Portal** (Next.js 16, App Router, React 19, Tailwind 4):
+
+| Rota           | Tela                                                   |
+| -------------- | ------------------------------------------------------ |
+| `/login`       | Login                                                  |
+| `/`            | Dashboard: lista com filtros, paginação e resumo       |
+| `/orders/new`  | Novo pedido                                            |
+| `/orders/[id]` | Detalhe: itens, endereço, mudança de status e exclusão |
+
+- **Sessão**: cookies `httpOnly` + `sameSite=lax` + `secure`; o **refresh token nunca sai do
+  cookie**; o access token vive **em memória** no cliente (nunca em `localStorage`)
+- **Dois caminhos para a API**: Server Components/Actions (servidor, cookie `httpOnly`) e o
+  browser (filtros instantâneos, token em memória, com CORS liberado para o portal)
+- **Renovação transparente**: `401` → Server Action renova a sessão → a requisição é repetida
+- Docker: imagem `standalone` do Next, usuário sem privilégios, `tini`, health check
+
+**Aceite**: `docker compose up --build` sobe API + portal + banco; o login do portal autentica
+contra a API real; a lista, os filtros, a criação, a mudança de status e a exclusão funcionam
+pelo portal; a API continua íntegra (todas as suítes verdes).
+
+### Módulo 10 — Documentação e revisão final
+
+- `README.md` da raiz documentando o **monorepo** (os dois apps, como rodar, o que é cada um)
+- `apps/web/README.md` com as decisões do portal
+- Revisão de consistência (nomes, scripts, variáveis, links) e verificação completa
+
+**Aceite**: a raiz do README explica o monorepo; `npm run dev:api` e `npm run dev:web` funcionam;
+o Docker sobe os dois serviços.
 
 ---
 
 ## Não escopo (explícito)
 
 - Serverless / deploy em nuvem
-- Frontend
 - Integração com transportadoras / CEP real
 - Multi-tenant
 - Push para GitHub (somente sob comando explícito do candidato)

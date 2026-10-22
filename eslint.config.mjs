@@ -5,7 +5,17 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'src/generated/**', 'eslint.config.mjs'],
+    ignores: [
+      '**/dist/**',
+      '**/coverage/**',
+      '**/coverage-e2e/**',
+      '**/node_modules/**',
+      '**/.next/**',
+      '**/src/generated/**',
+      'eslint.config.mjs',
+      // O portal tem configuração própria (eslint-config-next).
+      'apps/web/**',
+    ],
   },
 
   // Base do ESLint (regras independentes de tipo)
@@ -65,7 +75,7 @@ export default tseslint.config(
 
   // Scripts de linha de comando: o console é a interface do script.
   {
-    files: ['prisma/**/*.ts', 'scripts/**/*.ts'],
+    files: ['apps/api/prisma/**/*.ts', 'apps/api/scripts/**/*.ts'],
     rules: {
       'no-console': 'off',
     },
@@ -73,7 +83,7 @@ export default tseslint.config(
 
   // Arquivos de teste: relaxa regras que não agregam em testes
   {
-    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', '**/test/**/*.ts'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',

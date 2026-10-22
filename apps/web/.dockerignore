@@ -1,0 +1,22 @@
+# Contexto de build do Docker — o que NÃO entra na imagem do portal.
+
+node_modules
+.next
+out
+dist
+coverage
+*.tsbuildinfo
+
+# Segredos e ambiente local
+.env
+.env.*
+!.env.example
+
+# Versionamento e documentação
+.git
+.gitignore
+.github
+README.md
+Dockerfile
+.dockerignore
+docker-compose.yml

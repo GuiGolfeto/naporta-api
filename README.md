@@ -18,6 +18,8 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 ## Sumário
 
 - [Como avaliar em 5 minutos](#como-avaliar-em-5-minutos)
+- [O monorepo](#o-monorepo)
+- [O portal](#o-portal)
 - [Stack](#stack)
 - [Como executar](#como-executar)
 - [Arquitetura](#arquitetura)
@@ -37,7 +39,7 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 ## Como avaliar em 5 minutos
 
 ```bash
-# 1) sobe a stack completa (banco + migrations + API)
+# 1) sobe a stack completa (banco + migrations + API + portal)
 docker compose up -d --build
 
 # 2) popula o banco com dados fictícios
@@ -73,21 +75,88 @@ curl -s "http://localhost:3000/api/v1/orders?status=PENDING&page=1&limit=5" \
 
 ---
 
+## O monorepo
+
+```
+naporta-desafio/
+├── apps/
+│   ├── api/                    # Web API (NestJS + Prisma + PostgreSQL)
+│   └── web/                    # Portal web (Next.js 16 + React 19 + Tailwind 4)
+├── packages/
+│   └── contracts/              # Contrato de dados compartilhado (tipos + regras)
+├── docker-compose.yml          # db + migrate + api + web
+└── package.json                # npm workspaces
+```
+
+| Workspace            | Papel                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `@naporta/api`       | A API: autenticação, pedidos, health checks, seed e testes.                         |
+| `@naporta/web`       | O portal: login, dashboard, criação, detalhe e ações de status.                     |
+| `@naporta/contracts` | Tipos do contrato da API (respostas e payloads) e as regras de transição de status. |
+
+**O contrato é a fonte única:** as classes de resposta da API `implementam` os tipos do
+`@naporta/contracts` — se a API mudar o formato, o portal **não compila**. As regras de
+transição de status também vivem no contrato: a API valida e o portal oferece as ações, e os
+dois concordam com o fluxo.
+
+**Scripts da raiz:**
+
+```bash
+npm run dev:api        # API em watch (3000)
+npm run dev:web        # portal em dev (3001)
+npm run build           # contracts -> api -> web
+npm run lint            # ESLint (API + contratos) e o lint próprio do portal
+npm run typecheck       # type-check de todos os workspaces
+npm run test            # testes da API
+npm run test:all        # unitários + e2e
+npm run seed            # popula o banco com dados fictícios
+```
+
+> Sem Turborepo/Nx: com dois apps, os scripts da raiz resolvem — menos uma dependência e menos
+> uma camada de abstração.
+
+## O portal
+
+| Rota           | Tela                                                   |
+| -------------- | ------------------------------------------------------ |
+| `/login`       | Login (e-mail e senha)                                 |
+| `/`            | Dashboard: lista de pedidos, filtros e paginação       |
+| `/orders/new`  | Novo pedido (cliente, endereço e itens)                |
+| `/orders/[id]` | Detalhe: itens, endereço, mudança de status e exclusão |
+
+### Como o portal fala com a API
+
+Dois caminhos, com o **token nunca exposto ao JavaScript do browser**:
+
+| Caminho                                         | Quem chama           | Token                                                                         |
+| ----------------------------------------------- | -------------------- | ----------------------------------------------------------------------------- |
+| **Server** (Server Components e Server Actions) | O servidor do portal | Lido do cookie `httpOnly` e enviado no header `Authorization`                 |
+| **Browser** (filtros instantâneos)              | O navegador          | Access token **em memória** (nunca em `localStorage`), entregue pelo servidor |
+
+- O login é uma **Server Action**: a API devolve access + refresh token e o portal grava
+  cookies `httpOnly` + `sameSite=lax` + `secure`;
+- o **refresh token nunca sai do cookie `httpOnly`** — a rotação acontece no servidor;
+- quando uma chamada do browser volta com `401`, o cliente chama a Server Action de renovação
+  (que usa o refresh token) e **repete** a requisição;
+- como o browser fala com a API, a **origem do portal precisa estar no CORS da API** — o Compose
+  já resolve isso (`CORS_ORIGINS`).
+
 ## Stack
 
-| Camada            | Tecnologia                                                 |
-| ----------------- | ---------------------------------------------------------- |
-| Runtime           | Node.js 24 (ESM)                                           |
-| Linguagem         | TypeScript 6.0 (`strict`)                                  |
-| Framework         | NestJS 12                                                  |
-| ORM               | Prisma 7 (client gerado em TypeScript, sem engine Rust)    |
-| Banco             | PostgreSQL 16 (Docker Compose)                             |
-| Testes            | Vitest 5 (unit + e2e com Supertest)                        |
-| Lint / Formatação | ESLint 10 (flat config, com type-checking) + Prettier 3    |
-| Logs              | nestjs-pino (JSON em produção, legível em desenvolvimento) |
-| Documentação      | OpenAPI 3 / Swagger UI em `/docs`                          |
-| Autenticação      | JWT (HS256) + refresh rotativo, senhas com argon2id        |
-| Docker            | Imagem multi-stage, usuário sem privilégios, health check  |
+| Camada            | Tecnologia                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| Runtime           | Node.js 24 (ESM)                                                                    |
+| Linguagem         | TypeScript 6.0 (`strict`)                                                           |
+| Framework         | NestJS 12                                                                           |
+| ORM               | Prisma 7 (client gerado em TypeScript, sem engine Rust)                             |
+| Banco             | PostgreSQL 16 (Docker Compose)                                                      |
+| Testes            | Vitest 5 (unit + e2e com Supertest)                                                 |
+| Lint / Formatação | ESLint 10 (flat config, com type-checking) + Prettier 3                             |
+| Logs              | nestjs-pino (JSON em produção, legível em desenvolvimento)                          |
+| Documentação      | OpenAPI 3 / Swagger UI em `/docs`                                                   |
+| Portal            | Next.js 16 (App Router, Server Components e Server Actions) + React 19 + Tailwind 4 |
+| Autenticação      | JWT (HS256) + refresh rotativo, senhas com argon2id                                 |
+| Docker            | Imagem multi-stage, usuário sem privilégios, health check                           |
 
 ---
 
@@ -101,37 +170,42 @@ curl -s "http://localhost:3000/api/v1/orders?status=PENDING&page=1&limit=5" \
 
 ## Como executar
 
-### 1. Subir o banco de dados
+### Opção A — tudo no Docker (recomendado)
 
 ```bash
-docker compose up -d
+cp .env.example .env      # ajuste se precisar
+docker compose up -d --build
 ```
 
-Sobe o PostgreSQL 16 em `localhost:5432` (volume nomeado `naporta-db-data`).
-Se a porta 5432 estiver ocupada, defina `DB_HOST_PORT` no `.env` (ver [Variáveis de ambiente](#variáveis-de-ambiente)).
+Sobe **banco + migrations + API + portal**:
 
-### 2. Configurar o ambiente
+| Serviço      | URL                          |
+| ------------ | ---------------------------- |
+| Portal       | http://localhost:3001        |
+| API          | http://localhost:3000/api/v1 |
+| Documentação | http://localhost:3000/docs   |
+| Banco        | `localhost:5432`             |
+
+### Opção B — desenvolvimento local
 
 ```bash
+# 1) só o banco
+docker compose up -d db
+
+# 2) ambiente e dependências (o `postinstall` já gera o Prisma Client)
 cp .env.example .env
-```
-
-### 3. Instalar as dependências
-
-```bash
 npm install
+
+# 3) migrations no banco de desenvolvimento
+npm run prisma:migrate:dev
+
+# 4) API e portal, em terminais separados
+npm run dev:api           # http://localhost:3000
+npm run dev:web           # http://localhost:3001
 ```
 
-O `postinstall` já executa `prisma generate` (gera o Prisma Client em `src/generated/prisma`).
-
-### 4. Subir a API
-
-```bash
-npm run prisma:migrate:dev   # aplica as migrations no banco de desenvolvimento
-npm run dev
-```
-
-A API fica disponível em **http://localhost:3000/api/v1**.
+> O `.env` fica na **raiz** do monorepo: os dois apps o carregam (a API pelo `@nestjs/config`, o
+> portal pelo `next.config.ts`).
 
 ### Verificação rápida
 
@@ -168,24 +242,29 @@ Com o banco parado, o `/health` continua respondendo `200` e o `/health/ready` r
 
 ## Scripts
 
-| Script                            | Descrição                                        |
-| --------------------------------- | ------------------------------------------------ |
-| `npm run dev`                     | API em modo watch (`nest start --watch`)         |
-| `npm run build`                   | Compila para `dist/`                             |
-| `npm run start:prod`              | Executa o build (`node dist/main.js`)            |
-| `npm run lint`                    | ESLint (falha se houver warning)                 |
-| `npm run lint:fix`                | ESLint com autofix                               |
-| `npm run format` / `format:check` | Prettier                                         |
-| `npm test`                        | Testes unitários                                 |
-| `npm run test:cov`                | Testes unitários + cobertura                     |
-| `npm run test:e2e`                | Testes e2e (Supertest)                           |
-| `npm run prisma:generate`         | Gera o Prisma Client                             |
-| `npm run prisma:migrate:dev`      | Cria/aplica migration em desenvolvimento         |
-| `npm run prisma:migrate`          | Aplica migrations (produção)                     |
-| `npm run prisma:studio`           | Prisma Studio                                    |
-| `npm run seed`                    | Popula o banco com dados fictícios (idempotente) |
-| `npm run seed:api`                | Popula o banco **passando pela API**             |
-| `npm run db:reset`                | Recria o schema do banco e roda a seed           |
+Todos os scripts rodam **na raiz** do monorepo (npm workspaces).
+
+| Script                                              | Descrição                                            |
+| --------------------------------------------------- | ---------------------------------------------------- |
+| `npm run dev:api`                                   | API em modo watch (`nest start --watch`, porta 3000) |
+| `npm run dev:web`                                   | Portal em modo dev (`next dev`, porta 3001)          |
+| `npm run build`                                     | Compila contratos → API → portal                     |
+| `npm run start:api` / `start:web`                   | Executa os builds de produção                        |
+| `npm run lint`                                      | ESLint (API + contratos) e o lint próprio do portal  |
+| `npm run lint:fix`                                  | ESLint com autofix                                   |
+| `npm run format` / `format:check`                   | Prettier                                             |
+| `npm run typecheck`                                 | Type-check de todos os workspaces                    |
+| `npm test`                                          | Testes unitários da API                              |
+| `npm run test:all`                                  | Unitários + e2e                                      |
+| `npm run test:cov` / `test:e2e:cov`                 | Cobertura (com piso configurado)                     |
+| `npm run seed`                                      | Popula o banco com dados fictícios (idempotente)     |
+| `npm run seed:api`                                  | Popula o banco **passando pela API**                 |
+| `npm run db:reset`                                  | Recria o schema do banco e roda a seed               |
+| `npm run prisma:generate`                           | Gera o Prisma Client                                 |
+| `npm run prisma:migrate:dev`                        | Cria/aplica migration em desenvolvimento             |
+| `npm run prisma:migrate`                            | Aplica migrations (produção)                         |
+| `npm run prisma:studio`                             | Prisma Studio                                        |
+| `npm run docker:up` / `docker:down` / `docker:logs` | Atalhos para o Compose                               |
 
 ---
 
@@ -678,10 +757,10 @@ recebam o mesmo número.
 
 ---
 
-## Estrutura do projeto
+## Estrutura do projeto (da API)
 
 ```
-src/
+apps/api/src/
 ├── main.ts                      # bootstrap: helmet, CORS, versionamento, pipes
 ├── app.module.ts                # módulo raiz
 ├── app.setup.ts                 # pipeline compartilhado entre dev e e2e
@@ -698,10 +777,12 @@ src/
     ├── health/                  # liveness + readiness
     ├── orders/                  # numeração sequencial do pedido
     └── prisma/                  # PrismaService + extensão de soft delete
-prisma/
+apps/api/prisma/
 ├── schema.prisma                # modelo de dados
-└── migrations/                  # migrations versionadas
-test/                            # testes e2e e de integração
+├── migrations/                  # migrations versionadas
+├── seed.ts                      # seed (dados fictícios)
+└── seed-data.ts                 # os dados fictícios em si
+apps/api/test/                   # testes e2e e de integração
 ```
 
 ---

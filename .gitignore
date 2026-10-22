@@ -2,13 +2,15 @@
 node_modules/
 
 # Build
-dist/
-build/
+**/dist/
+**/build/
+**/.next/
+**/out/
 *.tsbuildinfo
 
 # Testes / cobertura
-coverage/
-coverage-e2e/
+**/coverage/
+**/coverage-e2e/
 .nyc_output/
 
 # Ambiente (mantém apenas o .env.example versionado)
@@ -18,7 +20,7 @@ coverage-e2e/
 !.env.example
 
 # Prisma — client gerado é artefato de build
-src/generated/
+**/src/generated/
 
 # Logs
 *.log

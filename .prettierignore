@@ -1,6 +1,9 @@
-node_modules/
-dist/
-coverage/
-src/generated/
+**/node_modules/
+**/dist/
+**/coverage/
+**/coverage-e2e/
+**/.next/
+**/src/generated/
+**/out/
 package-lock.json
 *.tsbuildinfo

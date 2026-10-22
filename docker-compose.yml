@@ -53,8 +53,10 @@ services:
   migrate:
     build:
       context: .
+      dockerfile: apps/api/Dockerfile
       target: build
-    command: ['npx', 'prisma', 'migrate', 'deploy']
+    # O schema e a config do Prisma vivem no app (`apps/api`).
+    command: ['npx', 'prisma', 'migrate', 'deploy', '--config', 'apps/api/prisma.config.ts']
     depends_on:
       db:
         condition: service_healthy
@@ -66,6 +68,7 @@ services:
   api:
     build:
       context: .
+      dockerfile: apps/api/Dockerfile
       target: runtime
     restart: unless-stopped
     depends_on:
@@ -84,7 +87,9 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      # O portal fala com a API a partir do browser (filtros instantâneos),
+      # então a origem dele precisa estar na lista.
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001}
       TRUST_PROXY: ${TRUST_PROXY:-0}
       THROTTLE_TTL: ${THROTTLE_TTL:-60000}
       THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
@@ -108,6 +113,46 @@ services:
       retries: 3
       start_period: 20s
     # O container não escreve nada: os logs vão para o stdout (pino).
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  # -------------------------------------------------------------------- web ---
+  # Portal web (Next.js). Fala com a API **no servidor** (Server Components e
+  # Server Actions) e também direto do browser (filtros instantâneos) — por isso
+  # a origem do portal está na lista de CORS da API.
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: runner
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # URL da API usada no servidor do portal.
+      API_URL: http://api:3000/api/v1
+      # URL da API usada no browser (embutida no bundle).
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000/api/v1}
+    ports:
+      - '${WEB_HOST_PORT:-3001}:3000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
     logging:
       driver: json-file
       options:
