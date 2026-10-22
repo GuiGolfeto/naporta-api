@@ -8,8 +8,8 @@ import type { AuthSession } from '@naporta/contracts';
 import { apiRequest, extractMessage } from '@/lib/api-client';
 import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from '@/lib/session';
 
-/** Estado devolvido por uma Server Action de formulário. */
-export interface AuthActionState {
+/** Resultado de uma ação de autenticação. */
+export interface AuthActionResult {
   error?: string;
 }
 
@@ -26,20 +26,17 @@ const cookieOptions = {
  *
  * Os tokens ficam em cookies `httpOnly`: o JavaScript do browser nunca tem
  * acesso a eles, o que impede que sejam exfiltrados por um XSS.
+ *
+ * A ação **não** redireciona: quem chamou decide o que fazer com o
+ * resultado (e o portal recarrega a página para o servidor enxergar o cookie).
  */
-export async function loginAction(
-  _previous: AuthActionState,
-  formData: FormData,
-): Promise<AuthActionState> {
-  const email = String(formData.get('email') ?? '').trim();
-  const password = String(formData.get('password') ?? '');
-
+export async function loginAction(email: string, password: string): Promise<AuthActionResult> {
   let session: AuthSession;
 
   try {
     session = await apiRequest<AuthSession>('/auth/login', {
       method: 'POST',
-      json: { email, password },
+      json: { email: email.trim(), password },
     });
   } catch (error) {
     const body = (error as { body?: never }).body;
@@ -62,7 +59,7 @@ export async function loginAction(
     maxAge: 60 * 60 * 24 * 7,
   });
 
-  redirect('/');
+  return {};
 }
 
 /** Encerra a sessão: revoga o refresh token e limpa os cookies. */

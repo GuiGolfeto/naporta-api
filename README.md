@@ -529,7 +529,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 npm run seed
 
 # 2) ou popular passando pela API (a API precisa estar no ar)
-npm run dev          # em outro terminal
+npm run dev:api      # em outro terminal
 npm run seed:api
 
 # 3) recomeçar do zero (recria o schema e popula)
@@ -765,24 +765,31 @@ apps/api/src/
 ├── app.module.ts                # módulo raiz
 ├── app.setup.ts                 # pipeline compartilhado entre dev e e2e
 ├── common/
+│   ├── decorators/              # @Public(), @Roles(), @CurrentUser()
 │   ├── errors/                  # mapeamento de erros do Prisma → HTTP
 │   ├── filters/                 # filtro global de exceções
-│   └── utils/
+│   ├── throttling/              # rate limit global e de credenciais
+│   ├── utils/                   # preço (Decimal), versão do package
+│   ├── validators/              # CPF/CNPJ por dígitos verificadores
+│   └── swagger.ts               # documento OpenAPI
 ├── config/                      # env tipado, validação (Joi) e namespaces
-├── common/
-│   ├── decorators/              # @Public(), @Roles(), @CurrentUser()
-│   └── throttling/              # rate limit global e de credenciais
 └── modules/
     ├── auth/                    # register/login/refresh/logout/me, guards, senhas
     ├── health/                  # liveness + readiness
-    ├── orders/                  # numeração sequencial do pedido
-    └── prisma/                  # PrismaService + extensão de soft delete
+    ├── orders/                  # CRUD, filtros, status e numeração do pedido
+    ├── prisma/                  # PrismaService + extensão de soft delete
+    └── users/                   # listagem de usuários (somente ADMIN)
 apps/api/prisma/
 ├── schema.prisma                # modelo de dados
 ├── migrations/                  # migrations versionadas
 ├── seed.ts                      # seed (dados fictícios)
 └── seed-data.ts                 # os dados fictícios em si
 apps/api/test/                   # testes e2e e de integração
+apps/web/src/
+├── app/                         # rotas, Server Components e Server Actions
+├── components/                  # UI (tabela, filtros, formulários, header)
+└── lib/                         # client da API (servidor e browser), sessão, formatação
+packages/contracts/src/          # o contrato da API (tipos + transições de status)
 ```
 
 ---

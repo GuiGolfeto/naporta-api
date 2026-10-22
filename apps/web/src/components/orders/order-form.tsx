@@ -1,8 +1,11 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 import { createOrderAction } from '@/app/actions/orders';
+import type { CreateOrderInput } from '@naporta/contracts';
 
 /** Item editável no formulário. */
 interface DraftItem {
@@ -19,7 +22,9 @@ function today(): string {
 
 /** Formulário de criação de pedido. */
 export function OrderForm() {
-  const [state, formAction, pending] = useActionState(createOrderAction, {});
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
   const [items, setItems] = useState<DraftItem[]>([
     { id: 1, description: '', quantity: 1, unitPrice: '' },
   ]);
@@ -44,11 +49,53 @@ export function OrderForm() {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const data = new FormData(event.currentTarget);
+
+    const payload: CreateOrderInput = {
+      expectedDeliveryDate: String(data.get('expectedDeliveryDate') ?? ''),
+      customerName: String(data.get('customerName') ?? ''),
+      customerDocument: String(data.get('customerDocument') ?? '').replace(/\D/g, ''),
+      address: {
+        street: String(data.get('street') ?? ''),
+        number: String(data.get('number') ?? ''),
+        neighborhood: String(data.get('neighborhood') ?? ''),
+        city: String(data.get('city') ?? ''),
+        state: String(data.get('state') ?? '').toUpperCase(),
+        zipCode: String(data.get('zipCode') ?? '').replace(/\D/g, ''),
+        ...(data.get('complement') ? { complement: String(data.get('complement')) } : {}),
+      },
+      items: items
+        .filter((item) => item.description.trim())
+        .map((item) => ({
+          description: item.description.trim(),
+          quantity: item.quantity,
+          unitPrice: item.unitPrice.trim(),
+        })),
+    };
+
+    setPending(true);
+    setError(null);
+
+    const result = await createOrderAction(payload);
+
+    if (result.error || !result.orderId) {
+      setError(result.error ?? 'Não foi possível criar o pedido.');
+      setPending(false);
+      return;
+    }
+
+    router.push(`/orders/${result.orderId}`);
+    router.refresh();
+  }
+
   const inputClass =
     'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none';
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-base font-semibold text-slate-900">Cliente e entrega</h2>
 
@@ -142,15 +189,14 @@ export function OrderForm() {
           {items.map((item) => (
             <div key={item.id} className="grid gap-3 sm:grid-cols-[1fr_6rem_9rem_auto]">
               <input
-                name="itemDescription"
                 value={item.description}
                 onChange={(event) => updateItem(item.id, { description: event.target.value })}
                 placeholder="Descrição do item"
                 required
+                aria-label="Descrição do item"
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none"
               />
               <input
-                name="itemQuantity"
                 type="number"
                 min={1}
                 max={9999}
@@ -158,15 +204,16 @@ export function OrderForm() {
                 onChange={(event) =>
                   updateItem(item.id, { quantity: Number(event.target.value) || 1 })
                 }
+                aria-label="Quantidade"
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none"
               />
               <input
-                name="itemUnitPrice"
                 value={item.unitPrice}
                 onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })}
                 placeholder="0,00"
                 inputMode="decimal"
                 required
+                aria-label="Preço unitário"
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none"
               />
               <button
@@ -186,12 +233,12 @@ export function OrderForm() {
         </p>
       </section>
 
-      {state.error ? (
+      {error ? (
         <p
           role="alert"
           className="rounded-md bg-rose-50 px-4 py-3 text-sm text-rose-700 ring-1 ring-rose-200"
         >
-          {state.error}
+          {error}
         </p>
       ) : null}
 

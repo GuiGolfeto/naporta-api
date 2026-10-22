@@ -237,11 +237,19 @@ naporta-desafio/
 contra a API real; a lista, os filtros, a criação, a mudança de status e a exclusão funcionam
 pelo portal; a API continua íntegra (todas as suítes verdes).
 
-### Módulo 10 — Documentação e revisão final
+### Módulo 10 — Documentação e revisão final ✅ CONCLUÍDO
 
 - `README.md` da raiz documentando o **monorepo** (os dois apps, como rodar, o que é cada um)
 - `apps/web/README.md` com as decisões do portal
-- Revisão de consistência (nomes, scripts, variáveis, links) e verificação completa
+- Revisão de consistência:
+  - scripts: os da raiz cobrem os documentados (+ `prisma:*` delegando ao workspace da API)
+  - variáveis: nenhuma declarada sem uso e nenhuma usada sem declaração
+  - links: todas as âncoras do sumário resolvem
+  - estrutura: a árvore do README bate com o repositório
+- Verificação completa: lint (raiz + portal), formatação, type-check dos 3 workspaces, build,
+  64 testes unitários, 89 e2e, cobertura com piso e stack Docker com 4 serviços healthy
+- Fluxo do portal validado de ponta a ponta (login → cookies `httpOnly` → dashboard com os
+  60 pedidos da seed), em desenvolvimento e no Docker
 
 **Aceite**: a raiz do README explica o monorepo; `npm run dev:api` e `npm run dev:web` funcionam;
 o Docker sobe os dois serviços.

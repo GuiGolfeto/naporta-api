@@ -1,16 +1,45 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 
 import { loginAction } from '@/app/actions/auth';
-import type { AuthActionState } from '@/app/actions/auth';
 
 /** Formulário de login do portal. */
 export function LoginForm() {
-  const [state, formAction, pending] = useActionState<AuthActionState, FormData>(loginAction, {});
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+    const data = new FormData(form);
+
+    setPending(true);
+    setError(null);
+
+    const result = await loginAction(
+      String(data.get('email') ?? ''),
+      String(data.get('password') ?? ''),
+    );
+
+    if (result.error) {
+      setError(result.error);
+      setPending(false);
+      return;
+    }
+
+    // A sessão está nos cookies: recarrega para o servidor renderizar o
+    // dashboard já autenticado.
+    router.push('/');
+    router.refresh();
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-slate-700">
           E-mail
@@ -41,12 +70,12 @@ export function LoginForm() {
         />
       </div>
 
-      {state.error ? (
+      {error ? (
         <p
           role="alert"
           className="rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-rose-200"
         >
-          {state.error}
+          {error}
         </p>
       ) : null}
 
