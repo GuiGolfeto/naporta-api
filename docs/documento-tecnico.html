@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>naPorta — Documento Técnico</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm 16mm 20mm 16mm;
+      }
+
+      :root {
+        --ink: #0f172a;
+        --ink-soft: #475569;
+        --ink-faint: #94a3b8;
+        --line: #e2e8f0;
+        --line-soft: #f1f5f9;
+        --brand: #059669;
+        --brand-dark: #047857;
+        --brand-tint: #ecfdf5;
+        --amber: #b45309;
+        --amber-tint: #fffbeb;
+        --slate-tint: #f8fafc;
+        --code-bg: #f8fafc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Helvetica Neue", Helvetica, Arial, "Segoe UI", system-ui, sans-serif;
+        font-size: 9.6pt;
+        line-height: 1.55;
+        color: var(--ink);
+      }
+
+      h1,
+      h2,
+      h3,
+      h4 {
+        margin: 0;
+        line-height: 1.25;
+        page-break-after: avoid;
+        break-after: avoid;
+      }
+
+      p {
+        margin: 0 0 7pt;
+        orphans: 2;
+        widows: 2;
+      }
+
+      a {
+        color: var(--brand-dark);
+        text-decoration: none;
+      }
+
+      code {
+        font-family: "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        font-size: 8.4pt;
+        background: var(--code-bg);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0.5pt 2.5pt;
+        word-break: break-word;
+      }
+
+      pre {
+        margin: 0 0 9pt;
+        padding: 7pt 9pt;
+        background: var(--code-bg);
+        border: 1px solid var(--line);
+        border-left: 2.5pt solid var(--brand);
+        border-radius: 3px;
+        overflow: hidden;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      pre code {
+        background: none;
+        border: none;
+        padding: 0;
+        font-size: 8.1pt;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 10pt;
+        font-size: 8.6pt;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      th {
+        text-align: left;
+        font-weight: 600;
+        font-size: 7.7pt;
+        letter-spacing: 0.035em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        background: var(--slate-tint);
+        border-bottom: 1px solid var(--line);
+        padding: 4.5pt 6pt;
+      }
+
+      td {
+        border-bottom: 1px solid var(--line-soft);
+        padding: 4.5pt 6pt;
+        vertical-align: top;
+      }
+
+      tbody tr:nth-child(even) td {
+        background: #fcfdfe;
+      }
+
+      ul,
+      ol {
+        margin: 0 0 8pt;
+        padding-left: 15pt;
+      }
+
+      li {
+        margin-bottom: 2.5pt;
+      }
+
+      strong {
+        font-weight: 600;
+      }
+
+      /* --------------------------------------------------------- estrutura --- */
+
+      .cover {
+        page-break-after: always;
+        break-after: page;
+        padding-top: 22mm;
+      }
+
+      .cover-eyebrow {
+        font-size: 8pt;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--brand);
+        font-weight: 600;
+        margin-bottom: 7pt;
+      }
+
+      .cover h1 {
+        font-size: 30pt;
+        letter-spacing: -0.022em;
+        margin-bottom: 5pt;
+      }
+
+      .cover .lead {
+        font-size: 12pt;
+        color: var(--ink-soft);
+        max-width: 145mm;
+        margin-bottom: 13mm;
+      }
+
+      .cover-rule {
+        width: 34mm;
+        height: 2.5pt;
+        background: var(--brand);
+        margin-bottom: 13mm;
+      }
+
+      .cover-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 7mm;
+        margin-bottom: 13mm;
+      }
+
+      .cover-stat {
+        border-top: 1.5pt solid var(--line);
+        padding-top: 5pt;
+      }
+
+      .cover-stat b {
+        display: block;
+        font-size: 15pt;
+        letter-spacing: -0.02em;
+      }
+
+      .cover-stat span {
+        font-size: 7.6pt;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .cover-stack {
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 8pt 11pt;
+        background: var(--slate-tint);
+        font-size: 8.5pt;
+        margin-bottom: 9mm;
+      }
+
+      .cover-stack b {
+        display: block;
+        margin-bottom: 3pt;
+        font-size: 7.7pt;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .cover-meta {
+        font-size: 8.4pt;
+        color: var(--ink-faint);
+        border-top: 1px solid var(--line);
+        padding-top: 5pt;
+      }
+
+      .toc {
+        page-break-after: always;
+        break-after: page;
+      }
+
+      .toc ol {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        counter-reset: toc;
+      }
+
+      .toc > ol > li {
+        counter-increment: toc;
+        margin-bottom: 5.5pt;
+        font-size: 10pt;
+      }
+
+      .toc > ol > li::before {
+        content: counter(toc, decimal) ". ";
+        color: var(--brand);
+        font-weight: 600;
+        margin-right: 5pt;
+      }
+
+      .toc ol ol {
+        padding-left: 15pt;
+        margin-top: 2.5pt;
+        font-size: 8.8pt;
+        color: var(--ink-soft);
+        list-style: none;
+      }
+
+      .toc ol ol li {
+        margin-bottom: 1.5pt;
+      }
+
+      .toc ol ol li::before {
+        content: "· ";
+        color: var(--ink-faint);
+      }
+
+      section {
+        page-break-inside: auto;
+      }
+
+      h2 {
+        font-size: 14.5pt;
+        letter-spacing: -0.015em;
+        margin: 0 0 8pt;
+        padding-bottom: 4pt;
+        border-bottom: 1.5pt solid var(--ink);
+      }
+
+      h2 .num {
+        color: var(--brand);
+        margin-right: 7pt;
+      }
+
+      h3 {
+        font-size: 10.6pt;
+        margin: 13pt 0 5pt;
+        color: var(--ink);
+      }
+
+      h3 .num {
+        color: var(--brand);
+        margin-right: 5pt;
+      }
+
+      h4 {
+        font-size: 9.4pt;
+        margin: 10pt 0 4pt;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.045em;
+      }
+
+      .lead {
+        font-size: 10.2pt;
+        color: var(--ink-soft);
+        margin-bottom: 10pt;
+      }
+
+      .page-break {
+        page-break-before: always;
+        break-before: page;
+      }
+
+      /* ------------------------------------------------------------- blocos --- */
+
+      .callout {
+        border: 1px solid var(--line);
+        border-left: 2.5pt solid var(--brand);
+        background: var(--brand-tint);
+        border-radius: 3px;
+        padding: 7pt 10pt;
+        margin: 0 0 10pt;
+        page-break-inside: avoid;
+      }
+
+      .callout.warn {
+        border-left-color: var(--amber);
+        background: var(--amber-tint);
+      }
+
+      .callout b {
+        display: block;
+        margin-bottom: 2pt;
+        font-size: 8.6pt;
+      }
+
+      .callout p:last-child {
+        margin-bottom: 0;
+      }
+
+      .kv {
+        display: grid;
+        grid-template-columns: 44mm 1fr;
+        gap: 0;
+        border-top: 1px solid var(--line);
+        margin-bottom: 10pt;
+      }
+
+      .kv div {
+        padding: 4pt 6pt 4pt 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .kv div:nth-child(odd) {
+        color: var(--ink-soft);
+        font-weight: 500;
+      }
+
+      .kv div:nth-child(even) {
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .badge {
+        display: inline-block;
+        border-radius: 3px;
+        padding: 0.5pt 4pt;
+        font-size: 7.4pt;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+      }
+
+      .badge.ok {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .badge.part {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .badge.no {
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      figure {
+        margin: 0 0 11pt;
+        page-break-inside: avoid;
+      }
+
+      figure svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      figcaption {
+        font-size: 8pt;
+        color: var(--ink-faint);
+        margin-top: 4pt;
+        text-align: center;
+      }
+
+      .note {
+        font-size: 8.4pt;
+        color: var(--ink-faint);
+        margin-top: -4pt;
+        margin-bottom: 10pt;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ============================================================ CAPA === -->
+    <div class="cover">
+      <div class="cover-eyebrow">Documento técnico</div>
+      <h1>naPorta</h1>
+      <div class="cover-rule"></div>
+      <p class="lead">
+        API de gestão de pedidos de entrega e portal web de operação. Monorepo com NestJS,
+        Prisma e PostgreSQL, autenticação JWT, exclusão lógica, cobertura de testes com piso
+        configurado e imagens Docker de produção.
+      </p>
+
+      <div class="cover-grid">
+        <div class="cover-stat"><b>10</b><span>endpoints REST</span></div>
+        <div class="cover-stat"><b>153</b><span>testes automatizados</span></div>
+        <div class="cover-stat"><b>6</b><span>tabelas · 19 índices</span></div>
+        <div class="cover-stat"><b>8.219</b><span>linhas de código</span></div>
+      </div>
+
+      <div class="cover-stack">
+        <b>Stack</b>
+        Node.js 24 (ESM) · TypeScript 6.0 · NestJS 12 · Prisma 7 · PostgreSQL 16 · Vitest 5 ·
+        ESLint 10 · Next.js 16 · React 19 · Tailwind 4 · Docker
+      </div>
+
+      <div class="cover-meta">
+        Versão 0.1.0 · 22 de outubro de 2026 · Repositório local, sem publicação em remoto
+      </div>
+    </div>
+
+    <!-- =========================================================== SUMÁRIO === -->
+    <div class="toc">
+      <h2 style="border: none; margin-bottom: 10pt">
+        <span class="num">—</span>Sumário
+      </h2>
+      <ol>
+        <li>Resumo executivo</li>
+        <li>Contexto e escopo</li>
+        <li>Arquitetura do sistema</li>
+        <li>Stack técnica</li>
+        <li>Modelo de dados</li>
+        <li>A API</li>
+        <li>Autenticação e segurança</li>
+        <li>O portal web</li>
+        <li>Testes e qualidade</li>
+        <li>Docker e operação</li>
+        <li>Decisões técnicas</li>
+        <li>Limitações conhecidas e próximos passos</li>
+        <li>Anexo: referência de comandos</li>
+      </ol>
+    </div>
+
+    <!-- ================================================ 1. RESUMO EXECUTIVO === -->
+    <section>
+      <h2><span class="num">1.</span>Resumo executivo</h2>
+      <p class="lead">
+        A naPorta é uma API de gestão de pedidos de entrega acompanhada de um portal web de
+        operação. O pedido é a entidade central: nasce com um número de negócio sequencial, tem
+        fluxo de status controlado, endereço de entrega, itens com preço exato e é removido por
+        exclusão lógica — a linha permanece no banco, mas some das leituras.
+      </p>
+
+      <h3>1.1 O que o sistema faz</h3>
+      <ul>
+        <li>
+          <strong>Autenticação</strong> por JWT com access token curto e refresh token rotativo;
+          detecção de reuso de token revoga todas as sessões do usuário.
+        </li>
+        <li>
+          <strong>CRUD de pedidos</strong> com listagem filtrável (número, status, período),
+          paginação, ordenação com lista branca e transições de status validadas.
+        </li>
+        <li>
+          <strong>Propriedade</strong> por dono do pedido: o usuário comum só acessa os próprios
+          pedidos; o administrador acessa todos.
+        </li>
+        <li>
+          <strong>Portal web</strong> que consome a API real, com sessão em cookie
+          <code>httpOnly</code> e renovação transparente do token.
+        </li>
+        <li>
+          <strong>Contrato compartilhado</strong> entre os dois apps: se a API mudar o formato
+          das respostas, o portal deixa de compilar.
+        </li>
+      </ul>
+
+      <h3>1.2 Números</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Indicador</th>
+            <th>Valor</th>
+            <th>Detalhe</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Endpoints</td>
+            <td>10</td>
+            <td>versionados em <code>/api/v1</code></td>
+          </tr>
+          <tr>
+            <td>Telas do portal</td>
+            <td>4</td>
+            <td>login, dashboard, novo pedido, detalhe</td>
+          </tr>
+          <tr>
+            <td>Testes</td>
+            <td>153</td>
+            <td>64 unitários + 89 e2e</td>
+          </tr>
+          <tr>
+            <td>Cobertura</td>
+            <td>78% / 85% / 79%</td>
+            <td>statements / functions / lines (pisos 75 / 80 / 75)</td>
+          </tr>
+          <tr>
+            <td>Modelo de dados</td>
+            <td>6 tabelas</td>
+            <td>19 índices, 1 migration versionada</td>
+          </tr>
+          <tr>
+            <td>Código</td>
+            <td>8.219 linhas</td>
+            <td>API 3.883 · testes 1.790 · portal 1.709 · contratos 263</td>
+          </tr>
+          <tr>
+            <td>Imagens</td>
+            <td>175 MB + 97 MB</td>
+            <td>API e portal, usuário sem privilégios, health check</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ================================================ 2. CONTEXTO E ESCOPO === -->
+    <section class="page-break">
+      <h2><span class="num">2.</span>Contexto e escopo</h2>
+      <p class="lead">
+        O sistema nasce de um desafio técnico de backend. O escopo pedido — API REST, JWT,
+        banco relacional, ORM, seed, README, testes e Docker — foi entregue integralmente, e
+        acrescido de três bônus: portal web, documentação OpenAPI gerada do código e contrato
+        compartilhado.
+      </p>
+
+      <h3>2.1 Requisitos do desafio × entrega</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 42%">Requisito</th>
+            <th style="width: 13%">Status</th>
+            <th>Onde</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>API em Node.js com NestJS</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>apps/api</code></td>
+          </tr>
+          <tr>
+            <td>Autenticação JWT com Bearer</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>modules/auth</code></td>
+          </tr>
+          <tr>
+            <td>Banco relacional</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>PostgreSQL 16 (Docker)</td>
+          </tr>
+          <tr>
+            <td>ORM</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>Prisma 7</td>
+          </tr>
+          <tr>
+            <td>Rotas REST</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>/api/v1</code></td>
+          </tr>
+          <tr>
+            <td>README com execução e scripts</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>README.md</code> + <code>apps/web/README.md</code></td>
+          </tr>
+          <tr>
+            <td>Seed com pedidos fictícios</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>prisma/seed.ts</code> (somente por comando)</td>
+          </tr>
+          <tr>
+            <td>Criar, listar, filtrar, editar, excluir</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>modules/orders</code></td>
+          </tr>
+          <tr>
+            <td>Exclusão lógica</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>extensão do Prisma</td>
+          </tr>
+          <tr>
+            <td>Clean Code</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>módulos, guards, filtros, mappers, tipagem estrita</td>
+          </tr>
+          <tr>
+            <td>Testes automatizados</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>153 testes + cobertura com piso</td>
+          </tr>
+          <tr>
+            <td>Docker</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>4 serviços na stack</td>
+          </tr>
+          <tr>
+            <td>Linter</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>ESLint 10 com type-checking</td>
+          </tr>
+          <tr>
+            <td>Serverless</td>
+            <td><span class="badge no">fora</span></td>
+            <td>decisão consciente: contêiner de longa duração é mais simples de operar e testar</td>
+          </tr>
+          <tr>
+            <td>Bônus: portal web</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>apps/web</code> (Next.js 16)</td>
+          </tr>
+          <tr>
+            <td>Bônus: documentação da API</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td>OpenAPI gerado do código em <code>/docs</code></td>
+          </tr>
+          <tr>
+            <td>Bônus: contrato compartilhado</td>
+            <td><span class="badge ok">entregue</span></td>
+            <td><code>packages/contracts</code></td>
+          </tr>
+          <tr>
+            <td>Bônus: CI/CD</td>
+            <td><span class="badge part">adiado</span></td>
+            <td>os scripts já existem na raiz do monorepo</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.2 Princípio de dados</h3>
+      <div class="callout">
+        <b>O banco nasce vazio — e continua assim até alguém pedir.</b>
+        <p>
+          A aplicação <strong>nunca</strong> popula o banco sozinha. O serviço de migrations
+          executa apenas <code>prisma migrate deploy</code>; os dados de demonstração entram só
+          por comando explícito (<code>npm run seed</code> ou <code>npm run seed:api</code>). A
+          suíte de testes ainda se recusa a rodar contra um banco que não seja de teste — os
+          testes fazem <code>TRUNCATE</code>, e apagar dados de trabalho por acidente seria
+          inaceitável.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================================================== 3. ARQUITETURA === -->
+    <section class="page-break">
+      <h2><span class="num">3.</span>Arquitetura do sistema</h2>
+      <p class="lead">
+        Monorepo com npm workspaces: duas aplicações e um pacote compartilhado. A API e o portal
+        conversam por HTTP, e o contrato entre eles é um workspace compilado — não uma
+        documentação que pode envelhecer.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L7,3 z" fill="#94a3b8" />
+            </marker>
+            <marker id="arrow-brand" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L7,3 z" fill="#059669" />
+            </marker>
+          </defs>
+
+          <rect x="8" y="18" width="742" height="300" rx="6" fill="#f8fafc" stroke="#e2e8f0" />
+
+          <text x="26" y="40" font-size="10" font-weight="700" fill="#0f172a">Portal web — Next.js 16 (App Router)</text>
+          <rect x="26" y="50" width="200" height="34" rx="4" fill="#ffffff" stroke="#cbd5e1" />
+          <text x="36" y="64" font-size="8.5" font-weight="600" fill="#0f172a">Server Components</text>
+          <text x="36" y="76" font-size="8" fill="#64748b">leem a sessão no cookie httpOnly</text>
+
+          <rect x="240" y="50" width="200" height="34" rx="4" fill="#ffffff" stroke="#cbd5e1" />
+          <text x="250" y="64" font-size="8.5" font-weight="600" fill="#0f172a">Server Actions</text>
+          <text x="250" y="76" font-size="8" fill="#64748b">login, criar pedido, mudar status</text>
+
+          <rect x="454" y="50" width="200" height="34" rx="4" fill="#ecfdf5" stroke="#6ee7b7" />
+          <text x="464" y="64" font-size="8.5" font-weight="600" fill="#065f46">Client (browser)</text>
+          <text x="464" y="76" font-size="8" fill="#047857">filtros instantâneos, token em memória</text>
+
+          <line x1="126" y1="88" x2="126" y2="118" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+          <line x1="340" y1="88" x2="340" y2="118" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+          <line x1="554" y1="88" x2="554" y2="118" stroke="#059669" stroke-width="1.2" marker-end="url(#arrow-brand)" />
+
+          <rect x="8" y="122" width="744" height="106" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+          <text x="26" y="142" font-size="10" font-weight="700" fill="#0f172a">API — NestJS 12</text>
+
+          <rect x="26" y="152" width="140" height="30" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="36" y="170" font-size="8" font-weight="600" fill="#0f172a">Middleware</text>
+
+          <rect x="176" y="152" width="140" height="30" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="186" y="170" font-size="8" font-weight="600" fill="#0f172a">Guards globais</text>
+
+          <rect x="326" y="152" width="140" height="30" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="336" y="170" font-size="8" font-weight="600" fill="#0f172a">ValidationPipe</text>
+
+          <rect x="476" y="152" width="140" height="30" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="486" y="170" font-size="8" font-weight="600" fill="#0f172a">Controller</text>
+
+          <rect x="626" y="152" width="110" height="30" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="636" y="170" font-size="8" font-weight="600" fill="#0f172a">Service</text>
+
+          <line x1="166" y1="167" x2="176" y2="167" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+          <line x1="316" y1="167" x2="326" y2="167" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+          <line x1="466" y1="167" x2="476" y2="167" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+          <line x1="616" y1="167" x2="626" y2="167" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+
+          <rect x="176" y="190" width="140" height="26" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="186" y="206" font-size="8" font-weight="600" fill="#0f172a">PrismaService</text>
+
+          <rect x="326" y="190" width="140" height="26" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="336" y="206" font-size="8" font-weight="600" fill="#0f172a">Filtro global</text>
+
+          <text x="26" y="206" font-size="8" fill="#64748b">helmet · CORS</text>
+          <text x="26" y="218" font-size="8" fill="#64748b">trust proxy</text>
+
+          <line x1="246" y1="216" x2="246" y2="238" stroke="#059669" stroke-width="1.2" marker-end="url(#arrow-brand)" />
+          <line x1="396" y1="216" x2="396" y2="238" stroke="#94a3b8" stroke-width="1.2" marker-end="url(#arrow)" />
+
+          <rect x="8" y="242" width="744" height="62" rx="6" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="140" y="254" width="212" height="38" rx="4" fill="#ecfdf5" stroke="#6ee7b7" />
+          <text x="152" y="271" font-size="8.5" font-weight="600" fill="#065f46">PostgreSQL 16</text>
+          <text x="152" y="283" font-size="8" fill="#047857">6 tabelas · 19 índices · Decimal(12,2)</text>
+
+          <rect x="440" y="254" width="180" height="38" rx="4" fill="#f8fafc" stroke="#cbd5e1" />
+          <text x="452" y="271" font-size="8.5" font-weight="600" fill="#0f172a">packages/contracts</text>
+          <text x="452" y="283" font-size="8" fill="#64748b">tipos + transições de status</text>
+
+          <text x="26" y="266" font-size="8" fill="#64748b">Extensão de</text>
+          <text x="26" y="277" font-size="8" fill="#64748b">soft delete</text>
+          <text x="26" y="288" font-size="8" fill="#64748b">transparente</text>
+        </svg>
+        <figcaption>
+          Fluxo de uma requisição: o portal fala com a API por dois caminhos — no servidor (cookie
+          httpOnly) e no browser (token em memória) — sempre atravessando o mesmo pipeline de
+          segurança.
+        </figcaption>
+      </figure>
+
+      <h3>3.1 Anatomia de uma requisição</h3>
+      <ol>
+        <li>
+          <strong>Middleware</strong> — <code>helmet</code> (CSP, HSTS, sniffing), CORS por
+          whitelist e <code>trust proxy</code>.
+        </li>
+        <li>
+          <strong>Guards globais</strong> — nesta ordem: rate limit, autenticação (Bearer) e
+          autorização por papel. Rotas sem <code>@Public()</code> exigem token.
+        </li>
+        <li>
+          <strong>ValidationPipe</strong> — valida os DTOs, remove campos não declarados
+          (<code>whitelist</code>) e rejeita campos desconhecidos
+          (<code>forbidNonWhitelisted</code>) com <strong>422</strong>.
+        </li>
+        <li><strong>Controller</strong> — apenas HTTP: parsing e delegação.</li>
+        <li>
+          <strong>Service</strong> — regras de negócio, autorização por propriedade e
+          transações.
+        </li>
+        <li>
+          <strong>Prisma</strong> — acesso a dados com a extensão de soft delete aplicada.
+        </li>
+        <li>
+          <strong>Filtro global</strong> — qualquer erro vira o mesmo formato de resposta.
+        </li>
+      </ol>
+
+      <h3>3.2 Organização do código</h3>
+      <div class="kv">
+        <div>apps/api/src/common</div>
+        <div>
+          decorators, mapeamento de erros, filtro global de exceções, limitadores, utilitários
+          (preço, versão) e validadores (CPF/CNPJ)
+        </div>
+        <div>apps/api/src/config</div>
+        <div>ambiente tipado, validação com Joi e namespaces de configuração</div>
+        <div>apps/api/src/modules</div>
+        <div>
+          <code>auth</code> (autenticação, guards, senhas, tokens) · <code>orders</code> (CRUD,
+          filtros, status, numeração) · <code>users</code> (administração) · <code>health</code>
+          (liveness e readiness) · <code>prisma</code> (client e extensão de soft delete)
+        </div>
+        <div>apps/web/src/app</div>
+        <div>rotas do App Router e Server Actions</div>
+        <div>apps/web/src/components</div>
+        <div>interface: tabela, filtros, formulários, cabeçalho e provedor de sessão</div>
+        <div>apps/web/src/lib</div>
+        <div>client da API (servidor e browser), leitura de cookies e formatação</div>
+        <div>packages/contracts</div>
+        <div>contrato de dados e regras de transição de status compartilhados</div>
+      </div>
+    </section>
+
+    <!-- ====================================================== 4. STACK === -->
+    <section class="page-break">
+      <h2><span class="num">4.</span>Stack técnica</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 20%">Camada</th>
+            <th style="width: 30%">Tecnologia</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Runtime</td>
+            <td>Node.js 24 (ESM)</td>
+            <td>
+              Projeto em <code>"type": "module"</code>: o ecossistema NestJS 12 é ESM-first e forçar
+              CommonJS exigiria pacotes incompatíveis.
+            </td>
+          </tr>
+          <tr>
+            <td>Linguagem</td>
+            <td>TypeScript 6.0 <code>strict</code></td>
+            <td>
+              <code>nodenext</code>, <code>noUncheckedIndexedAccess</code>, resolução de tipos via
+              <code>import type</code> — exceto nas classes injetadas, que o Nest resolve em runtime.
+            </td>
+          </tr>
+          <tr>
+            <td>Framework</td>
+            <td>NestJS 12</td>
+            <td>Módulos, guards globais, pipes, filtros e interceptores de log.</td>
+          </tr>
+          <tr>
+            <td>ORM</td>
+            <td>Prisma 7</td>
+            <td>
+              Client gerado como TypeScript (<code>src/generated/prisma</code>), sem engine Rust:
+              cold start mais rápido e os tipos no repositório.
+            </td>
+          </tr>
+          <tr>
+            <td>Banco</td>
+            <td>PostgreSQL 16</td>
+            <td>
+              <code>Decimal(12,2)</code> para dinheiro, <code>UUID</code> v4 para chaves, cascade
+              nos filhos.
+            </td>
+          </tr>
+          <tr>
+            <td>Testes</td>
+            <td>Vitest 5 + Supertest</td>
+            <td>
+              <code>unplugin-swc</code> no lugar do esbuild — o Nest depende de
+              <code>emitDecoratorMetadata</code>, que o esbuild não implementa.
+            </td>
+          </tr>
+          <tr>
+            <td>Qualidade</td>
+            <td>ESLint 10 + Prettier 3</td>
+            <td>
+              Flat config com <code>projectService</code>: regras que dependem de tipo
+              (<code>no-floating-promises</code>, <code>no-unsafe-assignment</code>) valem de
+              verdade.
+            </td>
+          </tr>
+          <tr>
+            <td>Logs</td>
+            <td>nestjs-pino</td>
+            <td>
+              JSON no container, legível no desenvolvimento; cabeçalhos sensíveis censurados
+              (<code>authorization</code>, <code>cookie</code>).
+            </td>
+          </tr>
+          <tr>
+            <td>Documentação</td>
+            <td>OpenAPI 3 (Swagger UI)</td>
+            <td>
+              Schemas gerados do código pelo plugin do <code>@nestjs/swagger</code>: os DTOs são a
+              fonte da verdade da validação e da documentação.
+            </td>
+          </tr>
+          <tr>
+            <td>Portal</td>
+            <td>Next.js 16 + React 19 + Tailwind 4</td>
+            <td>App Router com Server Components, Server Actions e <code>output: standalone</code>.</td>
+          </tr>
+          <tr>
+            <td>Infraestrutura</td>
+            <td>Docker (Compose)</td>
+            <td>Imagens multi-stage, usuário sem privilégios, <code>tini</code> como PID 1 e health check.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ================================================ 5. MODELO DE DADOS === -->
+    <section class="page-break">
+      <h2><span class="num">5.</span>Modelo de dados</h2>
+
+      <figure>
+        <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif">
+          <rect x="14" y="16" width="176" height="104" rx="5" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="14" y="16" width="176" height="19" rx="5" fill="#f1f5f9" />
+          <text x="24" y="29" font-size="8.5" font-weight="700" fill="#0f172a">users</text>
+          <text x="24" y="50" font-size="8" fill="#334155">id · uuid (PK)</text>
+          <text x="24" y="63" font-size="8" fill="#334155">name · varchar(120)</text>
+          <text x="24" y="76" font-size="8" fill="#334155">email · varchar(180) (UK)</text>
+          <text x="24" y="89" font-size="8" fill="#334155">password_hash · varchar(255)</text>
+          <text x="24" y="102" font-size="8" fill="#334155">role · USER | ADMIN</text>
+          <text x="24" y="115" font-size="8" fill="#64748b">deleted_at · timestamptz (soft)</text>
+
+          <rect x="292" y="16" width="176" height="104" rx="5" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="292" y="16" width="176" height="19" rx="5" fill="#ecfdf5" />
+          <text x="302" y="29" font-size="8.5" font-weight="700" fill="#065f46">orders</text>
+          <text x="302" y="50" font-size="8" fill="#334155">id · uuid (PK)</text>
+          <text x="302" y="63" font-size="8" fill="#334155">number · varchar(20) (UK)</text>
+          <text x="302" y="76" font-size="8" fill="#334155">status · OrderStatus</text>
+          <text x="302" y="89" font-size="8" fill="#334155">expected_delivery_date · date</text>
+          <text x="302" y="102" font-size="8" fill="#334155">customer_name · customer_document</text>
+          <text x="302" y="115" font-size="8" fill="#334155">total · Decimal(12,2)</text>
+
+          <rect x="570" y="16" width="176" height="104" rx="5" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="570" y="16" width="176" height="19" rx="5" fill="#f1f5f9" />
+          <text x="580" y="29" font-size="8.5" font-weight="700" fill="#0f172a">refresh_tokens</text>
+          <text x="580" y="50" font-size="8" fill="#334155">id · uuid (PK)</text>
+          <text x="580" y="63" font-size="8" fill="#334155">token_hash · varchar(128) (UK)</text>
+          <text x="580" y="76" font-size="8" fill="#334155">user_id · uuid (FK)</text>
+          <text x="580" y="89" font-size="8" fill="#334155">expires_at · timestamptz</text>
+          <text x="580" y="102" font-size="8" fill="#334155">revoked_at · timestamptz</text>
+          <text x="580" y="115" font-size="8" fill="#64748b">user_agent · ip_address</text>
+
+          <rect x="14" y="164" width="176" height="86" rx="5" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="14" y="164" width="176" height="19" rx="5" fill="#f1f5f9" />
+          <text x="24" y="177" font-size="8.5" font-weight="700" fill="#0f172a">order_counters</text>
+          <text x="24" y="198" font-size="8" fill="#334155">year · int (PK)</text>
+          <text x="24" y="211" font-size="8" fill="#334155">last_number · int</text>
+          <text x="24" y="232" font-size="8" fill="#64748b">numeração atômica por ano</text>
+
+          <rect x="292" y="164" width="176" height="86" rx="5" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="292" y="164" width="176" height="19" rx="5" fill="#f1f5f9" />
+          <text x="302" y="177" font-size="8.5" font-weight="700" fill="#0f172a">addresses</text>
+          <text x="302" y="198" font-size="8" fill="#334155">id · uuid (PK)</text>
+          <text x="302" y="211" font-size="8" fill="#334155">order_id · uuid (FK, UK)</text>
+          <text x="302" y="224" font-size="8" fill="#334155">street · number · city · state</text>
+          <text x="302" y="237" font-size="8" fill="#334155">zip_code · country</text>
+
+          <rect x="570" y="164" width="176" height="86" rx="5" fill="#ffffff" stroke="#cbd5e1" />
+          <rect x="570" y="164" width="176" height="19" rx="5" fill="#f1f5f9" />
+          <text x="580" y="177" font-size="8.5" font-weight="700" fill="#0f172a">order_items</text>
+          <text x="580" y="198" font-size="8" fill="#334155">id · uuid (PK)</text>
+          <text x="580" y="211" font-size="8" fill="#334155">order_id · uuid (FK)</text>
+          <text x="580" y="224" font-size="8" fill="#334155">description · quantity</text>
+          <text x="580" y="237" font-size="8" fill="#334155">unit_price · total · Decimal(12,2)</text>
+
+          <line x1="190" y1="52" x2="292" y2="52" stroke="#94a3b8" stroke-width="1.2" />
+          <text x="204" y="46" font-size="7.5" fill="#64748b">1 : N</text>
+          <path d="M 102 120 L 102 148 L 658 148 L 658 120" fill="none" stroke="#94a3b8" stroke-width="1.2" />
+          <text x="320" y="144" font-size="7.5" fill="#64748b">1 : N — sessões do usuário</text>
+          <line x1="380" y1="120" x2="380" y2="164" stroke="#94a3b8" stroke-width="1.2" />
+          <text x="386" y="146" font-size="7.5" fill="#64748b">1 : 1</text>
+          <line x1="468" y1="120" x2="620" y2="164" stroke="#94a3b8" stroke-width="1.2" />
+          <text x="516" y="146" font-size="7.5" fill="#64748b">1 : N</text>
+        </svg>
+        <figcaption>
+          Seis tabelas, 19 índices. Endereço e itens são tabelas próprias (não campos JSON): a
+          integridade referencial fica no banco.
+        </figcaption>
+      </figure>
+
+      <h3>5.1 Entidades</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%">Tabela</th>
+            <th style="width: 30%">Papel</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>users</code></td>
+            <td>Usuários da API</td>
+            <td>
+              Senha só como hash argon2id; papel <code>USER</code>/<code>ADMIN</code>;
+              <code>deleted_at</code> para exclusão lógica.
+            </td>
+          </tr>
+          <tr>
+            <td><code>orders</code></td>
+            <td>Pedidos</td>
+            <td>
+              <code>number</code> único <strong>global</strong> (nunca reutilizado, nem após
+              exclusão lógica); <code>total</code> desnormalizado para listagem sem agregação.
+            </td>
+          </tr>
+          <tr>
+            <td><code>addresses</code></td>
+            <td>Endereço de entrega</td>
+            <td>Relação 1:1 com o pedido, com cascade do banco.</td>
+          </tr>
+          <tr>
+            <td><code>order_items</code></td>
+            <td>Itens do pedido</td>
+            <td>Relação 1:N; <code>unit_price</code> e <code>total</code> em <code>Decimal(12,2)</code>.</td>
+          </tr>
+          <tr>
+            <td><code>refresh_tokens</code></td>
+            <td>Sessões ativas</td>
+            <td>
+              Guarda o <strong>hash SHA-256</strong> do token — nunca o token. <code>revoked_at</code>
+              implementa a rotação.
+            </td>
+          </tr>
+          <tr>
+            <td><code>order_counters</code></td>
+            <td>Sequencial anual</td>
+            <td>Permite o upsert atômico que gera o número do pedido.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>5.2 Número do pedido</h3>
+      <p>
+        O número segue o padrão <code>NP-AAAA-NNNNN</code> (ex.: <code>NP-2026-00001</code>) e é
+        atribuído por ano com um <em>upsert</em> atômico — a atomicidade vem do próprio banco,
+        sem lock explícito na aplicação:
+      </p>
+      <pre><code>INSERT INTO order_counters (year, last_number) VALUES ($1, 1)
+ON CONFLICT (year) DO UPDATE SET last_number = order_counters.last_number + 1
+RETURNING last_number;</code></pre>
+      <p>
+        Duas requisições simultâneas nunca recebem o mesmo número — a suíte cobre isso com 10
+        criações concorrentes e 25 chamadas diretas ao gerador.
+      </p>
+
+      <h3>5.3 Dinheiro</h3>
+      <p>
+        Valores monetários usam <code>Decimal(12,2)</code> no banco e são serializados como
+        <code>number</code> apenas na borda da resposta. A entrada aceita número ou string, com no
+        máximo duas casas decimais: valor com mais casas é <strong>rejeitado</strong>, nunca
+        arredondado em silêncio. O efeito aparece no teste:
+        <code>3 × 0,10 + 0,20 = 0,50</code> — e não <code>0,5000000000000001</code>.
+      </p>
+    </section>
+
+    <!-- ======================================================= 6. A API === -->
+    <section class="page-break">
+      <h2><span class="num">6.</span>A API</h2>
+      <p class="lead">
+        Convenção REST com versionamento por URI (<code>/api/v1</code>). Todos os endpoints
+        exigem <code>Authorization: Bearer &lt;accessToken&gt;</code>, exceto os marcados como
+        públicos.
+      </p>
+
+      <h3>6.1 Endpoints</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 12%">Método</th>
+            <th style="width: 34%">Rota</th>
+            <th style="width: 12%">Público</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>POST</td>
+            <td><code>/api/v1/auth/register</code></td>
+            <td>sim</td>
+            <td>Cria a conta (papel <code>USER</code>) e devolve a sessão inicial.</td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td><code>/api/v1/auth/login</code></td>
+            <td>sim</td>
+            <td>Autentica e emite access + refresh token.</td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td><code>/api/v1/auth/refresh</code></td>
+            <td>sim</td>
+            <td>Renova a sessão e rotaciona o refresh token.</td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td><code>/api/v1/auth/logout</code></td>
+            <td>não</td>
+            <td>Revoga o refresh token informado. Responde <code>204</code>.</td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/v1/auth/me</code></td>
+            <td>não</td>
+            <td>Dados do usuário autenticado.</td>
+          </tr>
+          <tr>
+            <td>POST</td>
+            <td><code>/api/v1/orders</code></td>
+            <td>não</td>
+            <td>Cria um pedido. Número e total são definidos pelo servidor.</td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/v1/orders</code></td>
+            <td>não</td>
+            <td>Lista com filtros, paginação e ordenação.</td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/v1/orders/:id</code></td>
+            <td>não</td>
+            <td>Detalha um pedido.</td>
+          </tr>
+          <tr>
+            <td>PATCH</td>
+            <td><code>/api/v1/orders/:id</code></td>
+            <td>não</td>
+            <td>Atualiza campos e/ou o status.</td>
+          </tr>
+          <tr>
+            <td>DELETE</td>
+            <td><code>/api/v1/orders/:id</code></td>
+            <td>não</td>
+            <td>Exclusão lógica. Responde <code>204</code>.</td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/v1/users</code></td>
+            <td>não</td>
+            <td>Lista usuários — restrito a <code>ADMIN</code>.</td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/v1/health</code></td>
+            <td>sim</td>
+            <td>Liveness: o processo está vivo?</td>
+          </tr>
+          <tr>
+            <td>GET</td>
+            <td><code>/api/v1/health/ready</code></td>
+            <td>sim</td>
+            <td>Readiness: o banco responde?</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.2 Filtros e paginação</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%">Parâmetro</th>
+            <th style="width: 30%">Exemplo</th>
+            <th>Descrição</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>number</code></td>
+            <td><code>NP-2026-00001</code></td>
+            <td>Número do pedido (comparação exata).</td>
+          </tr>
+          <tr>
+            <td><code>status</code></td>
+            <td><code>PENDING</code></td>
+            <td>
+              <code>PENDING</code> · <code>CONFIRMED</code> · <code>PROCESSING</code> ·
+              <code>SHIPPED</code> · <code>DELIVERED</code> · <code>CANCELLED</code>
+            </td>
+          </tr>
+          <tr>
+            <td><code>startDate</code> / <code>endDate</code></td>
+            <td><code>2026-01-01</code></td>
+            <td>Período sobre a <strong>data prevista de entrega</strong>.</td>
+          </tr>
+          <tr>
+            <td><code>page</code> / <code>limit</code></td>
+            <td><code>1</code> / <code>20</code></td>
+            <td>Paginação; limite máximo de 100.</td>
+          </tr>
+          <tr>
+            <td><code>sortBy</code> / <code>order</code></td>
+            <td><code>total</code> / <code>desc</code></td>
+            <td>
+              Ordenação por lista branca: <code>createdAt</code>, <code>expectedDeliveryDate</code>,
+              <code>total</code>, <code>number</code>, <code>status</code>.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h4>Formato da resposta paginada</h4>
+      <pre><code>{
+  "data": [ /* pedidos */ ],
+  "meta": { "total": 60, "page": 1, "limit": 20, "totalPages": 3 }
+}</code></pre>
+
+      <h3>6.3 Formato de erro</h3>
+      <p>Todo erro — validação, negócio, autorização ou infraestrutura — sai no mesmo formato:</p>
+      <pre><code>{
+  "statusCode": 409,
+  "error": "Conflict",
+  "message": "Não é possível alterar o status de PENDING para DELIVERED.",
+  "path": "/api/v1/orders/6f1c…",
+  "timestamp": "2026-10-22T05:02:22.091Z",
+  "requestId": "42"
+}</code></pre>
+
+      <h4>Erros conhecidos do banco são traduzidos</h4>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 34%">Origem</th>
+            <th style="width: 18%">HTTP</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>P2002</code></td>
+            <td>409</td>
+            <td>Violação de unicidade.</td>
+          </tr>
+          <tr>
+            <td><code>P2025</code></td>
+            <td>404</td>
+            <td>Registro não encontrado.</td>
+          </tr>
+          <tr>
+            <td><code>P2003</code></td>
+            <td>400</td>
+            <td>Referência inválida (foreign key).</td>
+          </tr>
+          <tr>
+            <td>Códigos de conexão</td>
+            <td>503</td>
+            <td>Banco indisponível.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>6.4 Regras de negócio</h3>
+      <ul>
+        <li>
+          <strong>Total</strong> — sempre calculado no servidor a partir dos itens. O cliente não
+          envia o campo; enviá-lo é rejeitado com <code>422</code>.
+        </li>
+        <li>
+          <strong>Status</strong> — o fluxo é
+          <code>PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED</code>; <code>CANCELLED</code>
+          é alcançável de qualquer etapa não terminal. Pular etapa ou voltar de um status final
+          devolve <code>409</code>.
+        </li>
+        <li>
+          <strong>Documento</strong> — CPF e CNPJ validados pelos dígitos verificadores; gravado
+          apenas com dígitos.
+        </li>
+        <li>
+          <strong>Data prevista</strong> — formato <code>YYYY-MM-DD</code>, válida e não no passado.
+        </li>
+        <li>
+          <strong>Propriedade</strong> — usuário comum só acessa os próprios pedidos; pedido de
+          outra pessoa responde <code>404</code> (e não <code>403</code>): a API não confirma a
+          existência de registros que o solicitante não pode ver.
+        </li>
+      </ul>
+    </section>
+
+    <!-- ========================================== 7. AUTENTICAÇÃO E SEGURANÇA === -->
+    <section class="page-break">
+      <h2><span class="num">7.</span>Autenticação e segurança</h2>
+
+      <h3>7.1 O ciclo da sessão</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 16%">Etapa</th>
+            <th style="width: 34%">Acontece</th>
+            <th>Garantia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Login</td>
+            <td>
+              A API valida a senha (argon2id) e emite um access token JWT (15 min) e um refresh
+              token opaco (7 dias).
+            </td>
+            <td>
+              O refresh token é gravado apenas como <strong>hash SHA-256</strong>. Vazamento do
+              banco não permite reaproveitar sessão.
+            </td>
+          </tr>
+          <tr>
+            <td>Uso</td>
+            <td>
+              O access token vai no header <code>Authorization: Bearer</code>; a API recarrega o
+              usuário do banco a cada requisição.
+            </td>
+            <td>
+              Conta desativada ou excluída perde o acesso <strong>imediatamente</strong>, sem esperar
+              o token expirar; o papel usado na autorização está sempre atualizado.
+            </td>
+          </tr>
+          <tr>
+            <td>Renovação</td>
+            <td>
+              O refresh token é Presentation trocado por um novo par; o antigo é revogado.
+            </td>
+            <td>
+              Reapresentar um token já rotacionado é tratado como <strong>roubo</strong>: todas as
+              sessões do usuário são revogadas.
+            </td>
+          </tr>
+          <tr>
+            <td>Logout</td>
+            <td>O refresh token é revogado e os cookies são limpos.</td>
+            <td>A sessão não pode ser retomada.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>7.2 Medidas aplicadas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 26%">Medida</th>
+            <th style="width: 36%">Implementação</th>
+            <th>Por que</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Hash de senha</td>
+            <td>argon2id — 19 MiB, 2 iterações, 1 thread (OWASP)</td>
+            <td>Resistente a GPU/ASIC; serviço isolado para permitir troca de algoritmo.</td>
+          </tr>
+          <tr>
+            <td>Política de senha</td>
+            <td>Mínimo 8 caracteres, ao menos uma letra e um número</td>
+            <td>Rejeitada com <code>422</code> antes de qualquer escrita.</td>
+          </tr>
+          <tr>
+            <td>Anti enumeração de contas</td>
+            <td>Mensagem idêntica e verificação de um hash descartável</td>
+            <td>
+              O tempo de resposta não revela quais e-mails existem — nem quando o e-mail não
+              existe.
+            </td>
+          </tr>
+          <tr>
+            <td>Anti escalonamento</td>
+            <td><code>role</code> não existe no DTO de cadastro</td>
+            <td>Todo cadastro nasce <code>USER</code>; enviar o papel é <code>422</code>.</td>
+          </tr>
+          <tr>
+            <td>Guards globais</td>
+            <td>Rate limit → autenticação → autorização por papel</td>
+            <td>Política <em>secure by default</em>: rota nova já nasce protegida.</td>
+          </tr>
+          <tr>
+            <td>Rate limit</td>
+            <td>5/min em credenciais, 100/min global, configurável</td>
+            <td>Força bruta; resposta <code>429</code> com <code>Retry-After</code>.</td>
+          </tr>
+          <tr>
+            <td>Cabeçalhos</td>
+            <td><code>helmet</code> com CSP, HSTS e anti-sniffing</td>
+            <td>Reduz a superfície de XSS e clickjacking.</td>
+          </tr>
+          <tr>
+            <td>CORS</td>
+            <td>Whitelist de origens</td>
+            <td>Só o portal e as origens declaradas acessam a API.</td>
+          </tr>
+          <tr>
+            <td>IP do cliente</td>
+            <td><code>TRUST_PROXY=0</code> por padrão</td>
+            <td>
+              <code>X-Forwarded-For</code> é forjável; confiar nele por padrão permitiria escapar do
+              rate limit. Só há proxy reverso real quando há proxy reverso real.
+            </td>
+          </tr>
+          <tr>
+            <td>Segredos</td>
+            <td>Validados no boot; em produção, obrigatórios e distintos</td>
+            <td>Segredos de desenvolvimento são recusados em produção.</td>
+          </tr>
+          <tr>
+            <td>Logs</td>
+            <td>Censura de <code>authorization</code> e <code>cookie</code></td>
+            <td>Token não vaza para o agregador de logs.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout warn">
+        <b>Uma armadilha que custou tempo: <code>import type</code> quebra a injeção do Nest.</b>
+        <p>
+          O Nest resolve dependências pelo tipo emitido em <code>design:paramtypes</code>, que
+          precisa do <strong>valor</strong> da classe em runtime. Com <code>import type</code>, o
+          Nest vê <code>undefined</code> e falha com <em>"can't resolve dependencies"</em>. Por isso
+          as classes injetadas são importadas como valor, com comentário explicando o motivo.
+        </p>
+      </div>
+    </section>
+
+    <!-- ================================================= 8. O PORTAL WEB === -->
+    <section class="page-break">
+      <h2><span class="num">8.</span>O portal web</h2>
+      <p class="lead">
+        Portal de operação em Next.js 16 (App Router). Existe porque uma API que ninguém consegue
+        usar de verdade não comprova nada — e o enunciado convida a ir além do escopo.
+      </p>
+
+      <h3>8.1 Telas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 20%">Rota</th>
+            <th style="width: 30%">Tela</th>
+            <th>Conteúdo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/login</code></td>
+            <td>Login</td>
+            <td>E-mail e senha; erro exibido sem recarregar a página.</td>
+          </tr>
+          <tr>
+            <td><code>/</code></td>
+            <td>Dashboard</td>
+            <td>
+              Lista de pedidos com filtros (número, status, período), paginação e total; os
+              filtros respondem sem recarregar a página.
+            </td>
+          </tr>
+          <tr>
+            <td><code>/orders/new</code></td>
+            <td>Novo pedido</td>
+            <td>Cliente, documento, endereço e itens (lista dinâmica com preço e quantidade).</td>
+          </tr>
+          <tr>
+            <td><code>/orders/[id]</code></td>
+            <td>Detalhe</td>
+            <td>
+              Itens, endereço, cliente, ações de status disponíveis e exclusão (com confirmação).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>8.2 Como o portal trata a sessão</h3>
+      <div class="kv">
+        <div>Access token</div>
+        <div>
+          Vive <strong>apenas em memória</strong> no cliente (via contexto React). Nunca vai para
+          <code>localStorage</code>, que persiste entre abas e é legível por qualquer script
+          injetado.
+        </div>
+        <div>Refresh token</div>
+        <div>
+          Fica <strong>sempre</strong> no cookie <code>httpOnly</code>: o JavaScript do browser
+          nunca o vê. A rotação acontece no servidor.
+        </div>
+        <div>Cookies</div>
+        <div>
+          <code>httpOnly</code> + <code>sameSite=lax</code> + <code>secure</code> em produção.
+        </div>
+        <div>Renovação</div>
+        <div>
+          Um <code>401</code> dispara a Server Action de renovação (que usa o refresh token) e a
+          requisição é repetida — transparente para o usuário.
+        </div>
+        <div>CORS</div>
+        <div>
+          Como o browser fala diretamente com a API nos filtros instantâneos, a origem do portal
+          precisa estar na lista <code>CORS_ORIGINS</code> da API.
+        </div>
+      </div>
+
+      <h3>8.3 O contrato compartilhado</h3>
+      <p>
+        O portal e a API conversam por HTTP, mas os <em>tipos</em> vêm do mesmo lugar:
+        <code>packages/contracts</code>. As classes de resposta da API implementam esses tipos —
+        se a API mudar o formato de uma resposta, o <strong>portal deixa de compilar</strong>. As
+        regras de transição de status também moram lá: a API valida e o portal oferece as ações, e
+        os dois concordam com o fluxo.
+      </p>
+      <pre><code>// apps/api — a resposta implementa o contrato
+export class OrderResponse implements OrderContract {
+  id!: string;
+  number!: string;
+  status!: OrderStatus;
+  /* ... */
+}</code></pre>
+    </section>
+
+    <!-- ============================================ 9. TESTES E QUALIDADE === -->
+    <section class="page-break">
+      <h2><span class="num">9.</span>Testes e qualidade</h2>
+      <p class="lead">
+        153 testes em duas suítes com finalidades distintas, e um piso de cobertura que faz a
+        suíte falhar se a qualidade cair.
+      </p>
+
+      <h3>9.1 As duas suítes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%">Suíte</th>
+            <th style="width: 26%">Comando</th>
+            <th style="width: 18%">Banco</th>
+            <th>Cobre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Unitária</td>
+            <td><code>npm test</code></td>
+            <td>não precisa</td>
+            <td>
+              Funções puras: transições de status, CPF/CNPJ, precisão decimal, mapeamento de
+              erros do Prisma, parsing de duração, configuração do limitador e hash de senha.
+            </td>
+          </tr>
+          <tr>
+            <td>E2E / integração</td>
+            <td><code>npm run test:e2e</code></td>
+            <td><code>naporta_test</code></td>
+            <td>
+              A aplicação inteira via HTTP: autenticação, refresh rotativo, CRUD, filtros,
+              paginação, propriedade, soft delete, seed, rate limit e concorrência.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>9.2 Cobertura</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th style="width: 20%">Atual</th>
+            <th style="width: 20%">Piso</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Statements</td>
+            <td>78%</td>
+            <td>75%</td>
+            <td rowspan="3">
+              O piso é configurado no Vitest: se a cobertura cair, <code>npm run test:e2e:cov</code>
+              <strong>falha</strong>. A suíte é rede de segurança, não formulário.
+            </td>
+          </tr>
+          <tr>
+            <td>Functions</td>
+            <td>85%</td>
+            <td>80%</td>
+          </tr>
+          <tr>
+            <td>Lines</td>
+            <td>79%</td>
+            <td>75%</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>9.3 O que a suíte prova (e não só "passa")</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 44%">Cenário</th>
+            <th>Como é verificado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Soft delete é real</td>
+            <td>
+              A linha continua na tabela com <code>deleted_at</code> preenchido e some das
+              leituras.
+            </td>
+          </tr>
+          <tr>
+            <td>O numerador não colide</td>
+            <td>10 criações de pedido <strong>simultâneas</strong> → 10 números distintos.</td>
+          </tr>
+          <tr>
+            <td>Dinheiro é exato</td>
+            <td><code>3 × 0,10 + 0,20 = 0,50</code> — nunca <code>0,5000000000000001</code>.</td>
+          </tr>
+          <tr>
+            <td>Reuso de token é detectado</td>
+            <td>Reapresentar um refresh token rotacionado revoga todas as sessões do usuário.</td>
+          </tr>
+          <tr>
+            <td>Conta inativa perde o acesso</td>
+            <td>Token válido deixa de valer imediatamente após a desativação.</td>
+          </tr>
+          <tr>
+            <td>Rate limit existe</td>
+            <td>Acima do limite: <code>429</code> com <code>Retry-After</code> e corpo no contrato.</td>
+          </tr>
+          <tr>
+            <td>Erro tem contrato único</td>
+            <td>Quatro tipos de falha devolvem o mesmo formato.</td>
+          </tr>
+          <tr>
+            <td>Propriedade é respeitada</td>
+            <td>Pedido de outra pessoa → <code>404</code> em leitura, edição e exclusão.</td>
+          </tr>
+          <tr>
+            <td>A suíte não toca o banco de dev</td>
+            <td>
+              O setup global <strong>recusa</strong> rodar contra um banco que não seja de teste
+              (os testes fazem <code>TRUNCATE</code>).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>9.4 Qualidade estática</h3>
+      <p>
+        O lint roda com informação de tipo (<code>projectService</code>), o que habilita regras que
+        só fazem sentido com o compilador: <code>no-floating-promises</code>,
+        <code>no-unsafe-assignment</code>, <code>require-await</code>. A formatação é
+        responsibility do Prettier, aplicado como regra do próprio ESLint — uma fonte única, sem
+        disputa entre as duas ferramentas.
+      </p>
+    </section>
+
+    <!-- ========================================= 10. DOCKER E OPERAÇÃO === -->
+    <section class="page-break">
+      <h2><span class="num">10.</span>Docker e operação</h2>
+
+      <h3>10.1 A stack</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 16%">Serviço</th>
+            <th style="width: 30%">Papel</th>
+            <th>Detalhe</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>db</code></td>
+            <td>PostgreSQL 16 (dev)</td>
+            <td>Volume nomeado, health check com <code>pg_isready</code>.</td>
+          </tr>
+          <tr>
+            <td><code>db-test</code></td>
+            <td>PostgreSQL 16 (testes)</td>
+            <td>Banco isolado, atrás do profile <code>test</code>.</td>
+          </tr>
+          <tr>
+            <td><code>migrate</code></td>
+            <td>Aplica migrations e <strong>encerra</strong></td>
+            <td>
+              Usa o estágio <code>build</code> (com o CLI do Prisma). A API só sobe com
+              <code>service_completed_successfully</code>.
+            </td>
+          </tr>
+          <tr>
+            <td><code>api</code></td>
+            <td>Web API</td>
+            <td>175 MB, usuário <code>node</code> sem privilégios, <code>tini</code> como PID 1, health check em <code>/api/v1/health</code>.</td>
+          </tr>
+          <tr>
+            <td><code>web</code></td>
+            <td>Portal</td>
+            <td>97 MB, saída <code>standalone</code> do Next, usuário sem privilégios, health check em <code>/login</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>10.2 A imagem da API</h3>
+      <p>
+        Quatro estágios, cada um com um propósito — e o resultado final sem nada que só serve para
+        construir:
+      </p>
+      <pre><code>deps      → npm ci (camada cacheável)
+build     → prisma generate + compilação dos contratos e da API
+prod-deps → npm ci --omit=dev (só dependências de produção)
+runtime   → imagem final: dist + node_modules enxuto, usuário node</code></pre>
+      <p>
+        O CLI do Prisma, o Prisma Studio e os dev tools (≈190 MB) são removidos do runtime: as
+        migrations rodam no serviço separado <code>migrate</code>.
+      </p>
+
+      <h3>10.3 Operação</h3>
+      <ul>
+        <li>
+          <strong>Configuração validada no boot</strong> — variáveis obrigatórias ausentes ou
+          inválidas derrubam a aplicação na inicialização, com mensagem explícita.
+        </li>
+        <li>
+          <strong>Encerramento gracioso</strong> — <code>tini</code> encaminha o <code>SIGTERM</code> e
+          o Nest fecha o pool do banco antes de sair.
+        </li>
+        <li>
+          <strong>Health checks distintos</strong> — <code>/health</code> (liveness) não depende do
+          banco: se o banco cair, a API continua viva e o orquestradorAge só no banco. Já
+          <code>/health/ready</code> verifica o banco e devolve <code>503</code>.
+        </li>
+        <li>
+          <strong>Logs estruturados</strong> — JSON no container, legível no desenvolvimento, com
+          campos sensíveis censurados.
+        </li>
+      </ul>
+    </section>
+
+    <!-- ============================================= 11. DECISÕES TÉCNICAS === -->
+    <section class="page-break">
+      <h2><span class="num">11.</span>Decisões técnicas</h2>
+      <p class="lead">
+        As escolhas que mais definem o sistema — e o motivo de cada uma.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 20%">Tema</th>
+            <th style="width: 32%">Decisão</th>
+            <th>Por quê</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Módulos ESM</td>
+            <td>Projeto em ESM</td>
+            <td>O ecossistema NestJS 12 é ESM-first; forçar CommonJS exigiria pacotes incompatíveis.</td>
+          </tr>
+          <tr>
+            <td>TypeScript</td>
+            <td>6.0 com <code>nodenext</code></td>
+            <td>Única versão que satisfaz os peers de <code>@nestjs/schematics</code> e do <code>typescript-eslint</code>.</td>
+          </tr>
+          <tr>
+            <td>Prisma</td>
+            <td>Client gerado como TypeScript, sem engine Rust</td>
+            <td>Cold start mais rápido, tipos no repositório, sem download de engine.</td>
+          </tr>
+          <tr>
+            <td>Prisma + herança</td>
+            <td>Composição (<code>PrismaService.client</code>)</td>
+            <td>A extensão devolve um objeto novo; herdar exigiria <code>as unknown as</code> e perderia a tipagem.</td>
+          </tr>
+          <tr>
+            <td>Testes</td>
+            <td>Vitest + <code>unplugin-swc</code></td>
+            <td>O Nest depende de <code>emitDecoratorMetadata</code>, que o esbuild não implementa.</td>
+          </tr>
+          <tr>
+            <td>Soft delete</td>
+            <td>Extensão do Prisma</td>
+            <td>Registro excluído nunca vaza por uma leitura "esquecida" de filtro.</td>
+          </tr>
+          <tr>
+            <td>Número do pedido</td>
+            <td>Upsert atômico no Postgres</td>
+            <td>Atomicidade vem do banco — sem lock explícito na aplicação.</td>
+          </tr>
+          <tr>
+            <td>Unicidade do número</td>
+            <td>Global (nunca reutilizado)</td>
+            <td>É identificador de negócio, como nota fiscal: reuso criaria ambiguidade na auditoria.</td>
+          </tr>
+          <tr>
+            <td>Dinheiro</td>
+            <td><code>Decimal(12,2)</code> no banco</td>
+            <td>Precisão exata na soma; <code>number</code> só na borda da resposta.</td>
+          </tr>
+          <tr>
+            <td>Total do pedido</td>
+            <td>Sempre calculado no servidor</td>
+            <td>O cliente não informa o valor — e o campo é rejeitado se enviado.</td>
+          </tr>
+          <tr>
+            <td>Senhas</td>
+            <td>argon2id (parâmetros OWASP)</td>
+            <td>Resistente a GPU/ASIC; serviço isolado para permitir troca de algoritmo.</td>
+          </tr>
+          <tr>
+            <td>Refresh token</td>
+            <td>Valor opaco + hash SHA-256 persistido</td>
+            <td>Vazamento do banco não permite reaproveitar nenhuma sessão.</td>
+          </tr>
+          <tr>
+            <td>Reuso de token</td>
+            <td>Revoga todas as sessões do usuário</td>
+            <td>Indício de roubo: invalida tudo, não só o token.</td>
+          </tr>
+          <tr>
+            <td>Erros</td>
+            <td>Filtro global + contrato único</td>
+            <td>Nenhuma rota devolve um formato diferente de erro.</td>
+          </tr>
+          <tr>
+            <td>Validação</td>
+            <td><code>422 Unprocessable Entity</code></td>
+            <td>Distingue "requisição malformada" (400) de "regra de negócio violada" (422).</td>
+          </tr>
+          <tr>
+            <td>Propriedade</td>
+            <td>Pedido alheio → 404</td>
+            <td>A API não confirma a existência de registros que o solicitante não pode ver.</td>
+          </tr>
+          <tr>
+            <td><code>TRUST_PROXY</code></td>
+            <td><code>0</code> por padrão</td>
+            <td><code>X-Forwarded-For</code> forjável escaparia do rate limit.</td>
+          </tr>
+          <tr>
+            <td>Sessão no portal</td>
+            <td>Cookie <code>httpOnly</code>; token do cliente em memória</td>
+            <td>XSS não lê o token; <code>localStorage</code> persiste entre abas.</td>
+          </tr>
+          <tr>
+            <td>Contrato</td>
+            <td><code>packages/contracts</code> com <code>implements</code></td>
+            <td>Mudança de formato quebra a compilação do portal.</td>
+          </tr>
+          <tr>
+            <td>Configuração</td>
+            <td><code>app.setup.ts</code> compartilhado</td>
+            <td>Dev e e2e usam o mesmo pipeline — sem divergência.</td>
+          </tr>
+          <tr>
+            <td>Seed</td>
+            <td>Somente por comando explícito</td>
+            <td>O banco nasce vazio; o que entra é sempre uma decisão consciente.</td>
+          </tr>
+          <tr>
+            <td>Migrations</td>
+            <td>Serviço separado no Compose</td>
+            <td>O CLI do Prisma fica fora da imagem final.</td>
+          </tr>
+          <tr>
+            <td>Cobertura</td>
+            <td>Piso configurado</td>
+            <td>A suíte falha se a qualidade cair.</td>
+          </tr>
+          <tr>
+            <td>Monorepo</td>
+            <td>npm workspaces, sem Turborepo/Nx</td>
+            <td>Com dois apps, os scripts da raiz bastam — menos uma camada de abstração.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============================== 12. LIMITAÇÕES E PRÓXIMOS PASSOS === -->
+    <section class="page-break">
+      <h2><span class="num">12.</span>Limitações conhecidas e próximos passos</h2>
+
+      <h3>12.1 Limitações assumidas</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 30%">Item</th>
+            <th>Situação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Rate limit distribuído</td>
+            <td>
+              O limitador é em memória: com várias instâncias da API, o limite vale por instância.
+              Redis resolveria.
+            </td>
+          </tr>
+          <tr>
+            <td>Refresh por dispositivo</td>
+            <td>A rotação é por sessão; falta listar e revogar os dispositivos conectados.</td>
+          </tr>
+          <tr>
+            <td>Histórico de itens</td>
+            <td>
+              Ao trocar a lista de itens, os antigos são removidos fisicamente. Com histórico, também
+              teriam <code>deleted_at</code>.
+            </td>
+          </tr>
+          <tr>
+            <td>Notificações</td>
+            <td>A mudança de status é síncrona; com e-mail ou SMS, viraria um job.</td>
+          </tr>
+          <tr>
+            <td>Observabilidade</td>
+            <td>Sem tracing distribuído nem métricas de negócio.</td>
+          </tr>
+          <tr>
+            <td>Testes de carga</td>
+            <td>Há teste de concorrência; falta uma suíte com k6 ou autocannon.</td>
+          </tr>
+          <tr>
+            <td>CI/CD</td>
+            <td>Adiado por decisão — os scripts já existem na raiz do monorepo.</td>
+          </tr>
+          <tr>
+            <td>Testes e2e do portal</td>
+            <td>Sem Playwright; o portal é exercitado manualmente e via API.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>12.2 Próximos passos sugeridos</h3>
+      <ol>
+        <li>
+          <strong>CI no GitHub Actions</strong> — <code>lint → typecheck → test → build</code>; os
+          scripts já existem.
+        </li>
+        <li>
+          <strong>Testes e2e do portal com Playwright</strong> — cobrindo login, criação de pedido
+          e mudança de status pela interface.
+        </li>
+        <li>
+          <strong>Rate limit com Redis</strong> — para rodar múltiplas instâncias da API atrás de
+          um balanceador.
+        </li>
+        <li>
+          <strong>Refresh tokens por dispositivo</strong> — listar e revogar sessões ativas.
+        </li>
+        <li>
+          <strong>Histórico de itens</strong> — preservar a auditoria de troca de itens.
+        </li>
+        <li>
+          <strong>Fila de notificações</strong> — mudança de status publica um evento.
+        </li>
+        <li>
+          <strong>Observabilidade</strong> — tracing (OpenTelemetry) e métricas de negócio.
+        </li>
+      </ol>
+    </section>
+
+    <!-- ================================================ 13. ANEXO === -->
+    <section class="page-break">
+      <h2><span class="num">13.</span>Anexo: referência de comandos</h2>
+
+      <h3>13.1 Subir o ambiente</h3>
+      <pre><code># Stack completa (banco + migrations + API + portal)
+cp .env.example .env
+docker compose up -d --build
+
+# Portal      http://localhost:3001
+# API         http://localhost:3000/api/v1
+# Swagger UI  http://localhost:3000/docs
+
+# Só o banco de desenvolvimento
+docker compose up -d db
+
+# Banco de testes (profile)
+docker compose --profile test up -d db-test</code></pre>
+
+      <h3>13.2 Desenvolvimento local</h3>
+      <pre><code>npm install                # postinstall já gera o Prisma Client
+npm run prisma:migrate:dev   # aplica migrations no banco de dev
+npm run dev:api              # API em watch (3000)
+npm run dev:web              # portal em dev (3001)</code></pre>
+
+      <h3>13.3 Dados de demonstração</h3>
+      <pre><code>npm run seed        # popula direto no Postgres (idempotente)
+npm run seed:api    # popula passando pela API (a API precisa estar no ar)
+npm run db:reset    # recria o schema e roda a seed</code></pre>
+
+      <h3>13.4 Qualidade</h3>
+      <pre><code>npm run lint        # ESLint (raiz + portal)
+npm run format      # Prettier
+npm run typecheck   # type-check dos três workspaces
+npm test            # 64 testes unitários
+npm run test:e2e    # 89 testes e2e
+npm run test:all    # as duas suítes
+npm run test:cov    # cobertura da suíte unitária
+npm run test:e2e:cov  # cobertura da suíte e2e (com piso)</code></pre>
+
+      <h3>13.5 Credenciais da seed</h3>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 34%">E-mail</th>
+            <th style="width: 26%">Senha</th>
+            <th>Papel</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>admin@naporta.local</code></td>
+            <td><code>Admin@1234</code></td>
+            <td><code>ADMIN</code> — vê todos os pedidos</td>
+          </tr>
+          <tr>
+            <td><code>operador@naporta.local</code></td>
+            <td><code>Operador@1234</code></td>
+            <td><code>USER</code> — só os próprios pedidos</td>
+          </tr>
+          <tr>
+            <td><code>ana@naporta.local</code></td>
+            <td><code>Cliente@1234</code></td>
+            <td><code>USER</code> — só os próprios pedidos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout">
+        <b>Exemplo: criando um pedido pela API</b>
+        <pre style="margin: 5pt 0 0"><code>TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"admin@naporta.local","password":"Admin@1234"}' | jq -r .accessToken)
+
+curl -s -X POST http://localhost:3000/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"expectedDeliveryDate":"2026-12-25","customerName":"Maria Silva",
+       "customerDocument":"11144477735",
+       "address":{"street":"Rua das Flores","number":"123","neighborhood":"Centro",
+                  "city":"São Paulo","state":"SP","zipCode":"01001000"},
+       "items":[{"description":"Caixa de papelão","quantity":2,"unitPrice":49.90}]}' | jq</code></pre>
+      </div>
+    </section>
+  </body>
+</html>
