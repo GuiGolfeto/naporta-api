@@ -2,7 +2,7 @@
   "name": "@naporta/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Portal web da naPorta \u2014 gest\u00e3o de pedidos de entrega",
+  "description": "Portal web da naPorta — gestão de pedidos de entrega",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20.19.0"
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@naporta/contracts": "*",
+    "dotenv": "18.0.8",
     "next": "16.4.2",
     "react": "19.3.1",
     "react-dom": "19.3.1"
