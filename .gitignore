@@ -1,0 +1,33 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Testes / cobertura
+coverage/
+.nyc_output/
+
+# Ambiente (mantém apenas o .env.example versionado)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Prisma — client gerado é artefato de build
+src/generated/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# Sistema operacional / editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json

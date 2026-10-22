@@ -1,0 +1,23 @@
+// Prisma schema — naPorta API
+//
+// Models de domínio são adicionados no Módulo 1 (Camada de Dados).
+// Neste módulo o schema contém apenas o datasource, o suficiente para
+// o health check falar com o Postgres.
+//
+// Configuração da conexão (datasource url / migrations / seed) fica em
+// `prisma.config.ts`, conforme a convenção do Prisma 7.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  runtime                = "nodejs"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  // Imports com extensão `.ts`: o `tsc` reescreve para `.js` no build
+  // (rewriteRelativeImportExtensions) e o `tsx` (seed) resolve direto.
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}

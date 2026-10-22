@@ -1,0 +1,48 @@
+name: naporta-api
+
+services:
+  # Banco de dados de desenvolvimento
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: naporta
+      POSTGRES_PASSWORD: naporta_dev_password
+      POSTGRES_DB: naporta
+    ports:
+      # Porta no host — sobrescreva com DB_HOST_PORT no .env se a 5432 estiver ocupada.
+      - '${DB_HOST_PORT:-5432}:5432'
+    volumes:
+      - naporta-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U naporta -d naporta']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Banco de dados de testes e2e — banco isolado do de desenvolvimento.
+  # Sobe apenas com: docker compose --profile test up -d db-test
+  db-test:
+    image: postgres:16-alpine
+    profiles: ['test']
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: naporta
+      POSTGRES_PASSWORD: naporta_test_password
+      POSTGRES_DB: naporta_test
+    ports:
+      # Porta no host — sobrescreva com DB_TEST_HOST_PORT no .env se a 5433 estiver ocupada.
+      - '${DB_TEST_HOST_PORT:-5433}:5432'
+    volumes:
+      - naporta-db-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U naporta -d naporta_test']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  naporta-db-data:
+  naporta-db-test-data:
