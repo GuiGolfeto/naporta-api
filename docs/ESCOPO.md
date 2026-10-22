@@ -143,6 +143,8 @@ continua na tabela); usuário alheio → 404; total calculado no servidor.
 - `scripts/populate-via-api.ts` (`npm run seed:api`) — alternativa que popula **só pela API**
   (HTTP), exercitando a API de ponta a ponta
 - `npm run db:reset` — recria o schema e roda a seed
+- Serviço `seed` no Compose (profile `seed`): popula o banco do Docker com um comando, sem
+  carregar o CLI do Prisma na imagem final da API
 
 **Aceite**: `npm run seed` popula 3 usuários e 60 pedidos; rodar de novo não duplica nada; os
 pedidos aparecem na API com os filtros funcionando; login com as credenciais da seed funciona;

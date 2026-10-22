@@ -49,7 +49,7 @@ services:
   # -------------------------------------------------------------- migrations ---
   # Aplica as migrations e encerra. O banco **não** é populado com seed:
   # os dados de demonstração entram só por comando explícito
-  # (`npm run seed` ou `npm run seed:api`).
+  # (`docker compose --profile seed run --rm seed` ou `npm run seed`).
   migrate:
     build:
       context: .
@@ -158,6 +158,30 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
+
+  # ------------------------------------------------------------------ seed ---
+  # Popula o banco com dados fictícios.
+  #
+  # Fica atrás de um profile de propósito: `docker compose up` continua
+  # subindo o banco **vazio** — a seed só entra quando pedida explicitamente.
+  #
+  # Usa o estágio `build` (o mesmo do serviço `migrate`) porque a imagem
+  # final da API não carrega o CLI do Prisma — ele somaria ~190 MB sem
+  # necessidade em produção.
+  seed:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: build
+    command: ['npx', 'prisma', 'db', 'seed']
+    working_dir: /app/apps/api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-naporta}:${POSTGRES_PASSWORD:-naporta_dev_password}@db:5432/${POSTGRES_DB:-naporta}
+    profiles: ['seed']
+    restart: 'no'
 
 volumes:
   naporta-db-data:

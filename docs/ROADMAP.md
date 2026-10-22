@@ -256,7 +256,8 @@ docker compose up -d --build
 # Swagger UI  → http://localhost:3000/docs
 
 # Dados fictícios
-npm run seed
+docker compose --profile seed run --rm seed   # com o Docker rodando
+npm run seed                                 # ou a partir do host
 
 # Testes
 npm run test:all

@@ -51,8 +51,8 @@ autenticação JWT, exclusão lógica, testes automatizados e imagem Docker de p
 docker compose up -d --build
 
 # 2) popula o banco com dados fictícios
-docker compose exec -T api npm run seed
-#   (ou, sem Docker: npm run seed)
+docker compose --profile seed run --rm seed
+#   (ou, a partir do host: npm run seed)
 
 # 3) autentica e cria um pedido
 TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
@@ -266,6 +266,7 @@ Todos os scripts rodam **na raiz** do monorepo (npm workspaces).
 | `npm run test:all`                                  | Unitários + e2e                                      |
 | `npm run test:cov` / `test:e2e:cov`                 | Cobertura (com piso configurado)                     |
 | `npm run seed`                                      | Popula o banco com dados fictícios (idempotente)     |
+| `docker compose --profile seed run --rm seed`       | O mesmo, com o banco do Docker rodando               |
 | `npm run seed:api`                                  | Popula o banco **passando pela API**                 |
 | `npm run db:reset`                                  | Recria o schema do banco e roda a seed               |
 | `npm run prisma:generate`                           | Gera o Prisma Client                                 |
@@ -531,6 +532,13 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 > | ------------------ | ---------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 > | `npm run seed`     | direto no Postgres (script `prisma/seed.ts`)         | demonstração com histórico: 3 usuários e 60 pedidos, com entregas no passado e no futuro |
 > | `npm run seed:api` | **só via API** (HTTP, `scripts/populate-via-api.ts`) | inicialização usando exclusivamente a API pública — valida a API de ponta a ponta        |
+>
+> **Com o Docker rodando**, a seed usa o serviço `seed` (que sobe a imagem de _build_, onde o
+> CLI do Prisma existe — a imagem final da API é enxuta e não o carrega):
+>
+> ```bash
+> docker compose --profile seed run --rm seed
+> ```
 
 ```bash
 # 1) popular direto no banco (idempotente: rodar de novo não duplica nada)
