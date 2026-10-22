@@ -30,7 +30,13 @@ export default async function OrderDetailPage({ params }: { params: Params }) {
   try {
     order = await apiRequest<Order>(`/orders/${id}`, { token: session.accessToken });
   } catch (error) {
-    if ((error as { status?: number }).status === 404) {
+    const status = (error as { status?: number }).status;
+
+    // 404: o pedido não existe (ou foi excluído).
+    // 400: o id nem siquiera é um UUID — também é "pedido inexistente".
+    // Qualquer outro erro cai na fronteira de erro da rota (`error.tsx`),
+    // que explica o que houve em vez de devolver um 500 sem contexto.
+    if (status === 404 || status === 400) {
       notFound();
     }
 
