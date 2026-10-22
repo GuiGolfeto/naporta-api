@@ -8,6 +8,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { configuration } from './config/configuration.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthModule } from './modules/health/health.module.js';
+import { OrdersModule } from './modules/orders/orders.module.js';
 import { PrismaModule } from './modules/prisma/prisma.module.js';
 
 @Module({
@@ -68,6 +69,7 @@ import { PrismaModule } from './modules/prisma/prisma.module.js';
     }),
 
     PrismaModule,
+    OrdersModule,
     HealthModule,
   ],
   providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],

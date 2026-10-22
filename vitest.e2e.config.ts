@@ -12,6 +12,7 @@ export default defineConfig({
     environment: 'node',
     include: ['test/**/*.e2e-spec.ts'],
     setupFiles: ['test/setup-e2e.ts'],
+    globalSetup: ['test/global-setup.ts'],
     // O banco de testes é compartilhado: os arquivos rodam em sequência.
     fileParallelism: false,
     pool: 'forks',

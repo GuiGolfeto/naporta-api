@@ -37,6 +37,10 @@
    com 2 casas na resposta da API.
 4. **Serverless**: fora do escopo.
 5. **Execução**: checkpoint (pausa) ao final de cada módulo, aguardando aprovação.
+6. **Número do pedido** _(revisado no Módulo 1)_: `number` com **unicidade global**, e não
+   índice parcial sobre os registros ativos. O número é um identificador de negócio (equivale
+   a um número de nota fiscal): reutilizá-lo após a exclusão lógica criaria ambiguidade no
+   histórico e na auditoria. Com a unicidade global, a exclusão lógica **reserva** o número.
 
 ---
 
@@ -53,19 +57,28 @@
 
 **Aceite**: `npm run dev` sobe a API; `/api/v1/health` retorna 200; Postgres acessível via Docker.
 
-### Módulo 1 — Camada de dados
+### Módulo 1 — Camada de dados ✅ CONCLUÍDO
 
-- `schema.prisma`: `User`, `RefreshToken`, `Order`, `Address`, `OrderItem`;
-  enums `Role` (`USER`, `ADMIN`) e `OrderStatus`
-- Migrations versionadas em `prisma/migrations`
-- `Address` (1:1) e `OrderItem` (1:N) como tabelas relacionadas — Prisma composite types
-  só existem para MongoDB
-- `Order` ↔ `User` via `createdById` (índice)
-- `Order.number` único com padrão `NP-YYYY-#####` (sequencial por ano, via sequence do Postgres)
-- `Order.deletedAt` (nullable) para soft delete; índice parcial para unicidade do `number`
-  desconsiderando deletados
+- `schema.prisma`: `User`, `RefreshToken`, `Order`, `Address`, `OrderItem`, `OrderCounter`;
+  enums `Role` (`USER`, `ADMIN`) e `OrderStatus` (`PENDING`, `CONFIRMED`, `PROCESSING`,
+  `SHIPPED`, `DELIVERED`, `CANCELLED`)
+- Migration versionada: `prisma/migrations/20261022045736_init/migration.sql`
+- Tabelas e colunas em `snake_case` (`@@map`/`@map`); IDs UUID v4; `onDelete: Cascade` nos filhos
+- `Order.address` como tabela 1:1 e `Order.items` como 1:N — Prisma composite types só existem
+  para MongoDB
+- `Order.number` único **global** (`NP-AAAA-NNNNN`): o número nunca é reutilizado, nem após
+  soft delete _(decisão revista durante a implementação — ver "Decisões confirmadas")_
+- `deletedAt` em `Order` e `User` + extensão do Prisma (`prisma.extensions.ts`) que aplica o
+  soft delete de forma transparente (leituras filtram, `update` só alcança ativos, `delete`
+  marca `deleted_at`)
+- `OrderNumberService`: sequencial anual gerado por upsert atômico
+  (`INSERT ... ON CONFLICT ... RETURNING`) — sem race condition
+- Testes: 7 de integração do soft delete, 5 de integração da numeração (incluindo 25 chamadas
+  simultâneas), 3 unitários do formatador
 
-**Aceite**: `prisma migrate dev` gera migration; `prisma studio` abre com o schema modelado.
+**Aceite**: `prisma migrate dev` aplica sem erro · schema criado no Postgres · soft delete
+comporta-se como exclusão lógica de verdade · numeração sequencial e sem duplicatas · lint,
+build e suites verdes.
 
 ### Módulo 2 — Autenticação & segurança
 

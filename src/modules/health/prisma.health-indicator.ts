@@ -29,7 +29,7 @@ export class PrismaHealthIndicator {
         const startedAt = Date.now();
 
         try {
-          await this.prisma.$queryRaw`SELECT 1`;
+          await this.prisma.client.$queryRaw`SELECT 1`;
         } catch (error) {
           // O Prisma 7 propaga o código do driver (`ECONNREFUSED`, ...) com uma
           // mensagem pouco descritiva — devolvemos algo acionável.

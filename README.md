@@ -2,9 +2,10 @@
 
 Web API da **naPorta** para gestão de pedidos de entrega, construída com NestJS, Prisma e PostgreSQL.
 
-> **Status do projeto:** Módulo 0 — Fundação.
-> A base está pronta (configuração, ambiente validado, Docker, lint, testes e health checks).
-> Os módulos de domínio (autenticação e pedidos) vêm a seguir.
+> **Status do projeto:** Módulos 0 e 1 concluídos — fundação e camada de dados.
+> A base está pronta (configuração, ambiente validado, Docker, lint, testes, health checks) e o
+> modelo de dados já está criado e migrado no Postgres. Autenticação (Módulo 2) e o CRUD de
+> pedidos (Módulo 3) vêm a seguir.
 
 ---
 
@@ -60,6 +61,7 @@ O `postinstall` já executa `prisma generate` (gera o Prisma Client em `src/gene
 ### 4. Subir a API
 
 ```bash
+npm run prisma:migrate:dev   # aplica as migrations no banco de desenvolvimento
 npm run dev
 ```
 
@@ -180,6 +182,88 @@ Erros conhecidos do Prisma são traduzidos automaticamente (`P2002` → 409, `P2
 
 ---
 
+## Modelo de dados
+
+```mermaid
+erDiagram
+    users ||--o{ orders : "é dono de"
+    users ||--o{ refresh_tokens : "possui"
+    orders ||--o| addresses : "entrega em"
+    orders ||--|{ order_items : "contém"
+
+    users {
+        uuid id PK
+        varchar name
+        varchar email UK
+        varchar password_hash
+        enum role "USER | ADMIN"
+        boolean is_active
+        timestamptz deleted_at "soft delete"
+    }
+
+    orders {
+        uuid id PK
+        varchar number UK "NP-2026-00001"
+        enum status "PENDING..CANCELLED"
+        date expected_delivery_date
+        varchar customer_name
+        varchar customer_document "CPF/CNPJ"
+        decimal total "12,2"
+        uuid created_by_id FK
+        timestamptz deleted_at "soft delete"
+    }
+
+    addresses {
+        uuid id PK
+        uuid order_id FK,UK
+        varchar street
+        varchar number
+        varchar neighborhood
+        varchar city
+        char state
+        varchar zip_code
+    }
+
+    order_items {
+        uuid id PK
+        uuid order_id FK
+        varchar description
+        int quantity
+        decimal unit_price "12,2"
+        decimal total "12,2"
+    }
+
+    refresh_tokens {
+        uuid id PK
+        varchar token_hash UK
+        uuid user_id FK
+        timestamptz expires_at
+        timestamptz revoked_at
+    }
+```
+
+| Modelo           | Papel                                                                                               |
+| ---------------- | --------------------------------------------------------------------------------------------------- |
+| `users`          | Usuários da API (hash de senha, papel `USER`/`ADMIN`, soft delete)                                  |
+| `orders`         | Pedidos — número de negócio único **global** (`NP-2026-00001`), status, cliente, total, soft delete |
+| `addresses`      | Endereço de entrega do pedido (1:1)                                                                 |
+| `order_items`    | Itens do pedido (1:N), preço em `Decimal(12,2)`                                                     |
+| `refresh_tokens` | Refresh tokens rotativos e revogáveis (hash do token, nunca o token)                                |
+| `order_counters` | Contador anual para o número sequencial do pedido                                                   |
+
+**Exclusão lógica:** os modelos `Order` e `User` têm `deleted_at`. Uma extensão do Prisma
+(`src/modules/prisma/prisma.extensions.ts`) aplica a regra de forma transparente:
+
+- leituras (`findMany`, `findUnique`, `count`…) ignoram registros excluídos;
+- `update` só alcança registros ativos;
+- `delete`/`deleteMany` marcam `deleted_at` em vez de apagar a linha.
+
+**Número do pedido:** sequencial anual (`NP-AAAA-NNNNN`) atribuído com um _upsert atômico_
+(`INSERT ... ON CONFLICT ... RETURNING`), o que garante que duas requisições simultâneas nunca
+recebam o mesmo número.
+
+---
+
 ## Estrutura do projeto
 
 ```
@@ -194,11 +278,12 @@ src/
 ├── config/                      # env tipado, validação (Joi) e namespaces
 └── modules/
     ├── health/                  # liveness + readiness
-    └── prisma/                  # PrismaService (driver adapter `pg`)
+    ├── orders/                  # numeração sequencial do pedido
+    └── prisma/                  # PrismaService + extensão de soft delete
 prisma/
-├── schema.prisma                # datasource (modelos no Módulo 1)
-└── migrations/
-test/                            # testes e2e
+├── schema.prisma                # modelo de dados
+└── migrations/                  # migrations versionadas
+test/                            # testes e2e e de integração
 ```
 
 ---
@@ -213,7 +298,10 @@ test/                            # testes e2e
 | **Vitest + SWC**          | `unplugin-swc` no lugar do esbuild                                                   | O Nest depende de `emitDecoratorMetadata`, que o esbuild não implementa.                                                                                |
 | **Configuração única**    | `src/app.setup.ts`                                                                   | `main.ts` e o setup dos testes e2e usam o mesmo pipeline — evita divergência entre dev e teste.                                                         |
 | **Validação de ambiente** | Joi no boot                                                                          | Falha rápido e com mensagem clara, em vez de erro em produção.                                                                                          |
-| **Soft delete / domínio** | Módulos 1 e 3                                                                        | —                                                                                                                                                       |
+| **Soft delete**           | Extensão do Prisma                                                                   | Registro excluído nunca vaza por uma leitura "esquecida" de filtro, e `delete` nunca apaga a linha fisicamente.                                         |
+| **Número do pedido**      | Upsert atômico no Postgres                                                           | Sem lock explícito: a atomicidade vem do próprio banco (`ON CONFLICT ... RETURNING`).                                                                   |
+| **Dinheiro**              | `Decimal(12,2)` no banco                                                             | Precisão exata; a serialização para `number` acontece na borda (Módulo 3).                                                                              |
+| **IDs**                   | UUID v4                                                                              | Evita IDs sequenciais e, com isso, enumeração de registros.                                                                                             |
 
 A seção completa de decisões e justificativas (com diagramas de arquitetura e ER) entra no **Módulo 7**.
 

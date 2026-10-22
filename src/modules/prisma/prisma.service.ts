@@ -2,29 +2,53 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { PrismaClient } from '../../generated/prisma/client.js';
+import { Prisma, PrismaClient } from '../../generated/prisma/client.js';
+import { softDeleteExtension } from './prisma.extensions.js';
 
 /**
- * Cliente Prisma com ciclo de vida gerenciado pelo Nest.
+ * Cria o client Prisma com a extensão de soft delete aplicada.
  *
- * No Prisma 7 a conexão é feita via *driver adapter* (`@prisma/adapter-pg`),
- * que usa o pool do `pg` por baixo dos panos.
+ * O tipo do client estendido é inferido daqui, para que o resto da aplicação
+ * tenha acesso tipado a `order`, `user`, etc.
+ */
+export function createPrismaClient(options: Prisma.PrismaClientOptions) {
+  return new PrismaClient(options).$extends(softDeleteExtension);
+}
+
+/** Client Prisma estendido (com soft delete). */
+export type ExtendedPrismaClient = ReturnType<typeof createPrismaClient>;
+
+/**
+ * Cliente Prisma da aplicação, com extensão de soft delete.
+ *
+ * Uso: `this.prisma.client.order.findMany(...)`.
+ *
+ * A extensão garante que:
+ *  - leituras nunca retornem registros excluídos (`deletedAt` preenchido);
+ *  - `delete`/`deleteMany` facam exclusão lógica em vez de apagar a linha;
+ *  - `update` só alcance registros ativos.
+ *
+ * O client é composto (e não herdado) porque o Prisma devolve um novo objeto
+ * ao aplicar extensões; herdá-lo exigiria `as unknown as` e perderia a
+ * segurança de tipos.
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name);
+
+  readonly client: ExtendedPrismaClient;
 
   constructor(configService: ConfigService) {
     const connectionString = configService.getOrThrow<string>('database.url');
 
-    super({
+    this.client = createPrismaClient({
       adapter: new PrismaPg({ connectionString }),
     });
   }
 
   async onModuleInit(): Promise<void> {
     try {
-      await this.$connect();
+      await this.client.$connect();
       this.logger.log('Conexão com o banco de dados estabelecida.');
     } catch (error) {
       // A API sobe mesmo sem banco: o health check de readiness (/health/ready)
@@ -36,6 +60,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.$disconnect();
+    await this.client.$disconnect();
   }
 }
