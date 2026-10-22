@@ -106,21 +106,25 @@ build e suites verdes.
 inválido, 401; refresh rotaciona e reuso revoga as sessões; logout revoga; conta desativada
 perde o acesso; rate limit responde 429.
 
-### Módulo 3 — Pedidos (core)
+### Módulo 3 — Pedidos (core) ✅ CONCLUÍDO
 
 - `POST /orders`, `GET /orders`, `GET /orders/:id`, `PATCH /orders/:id`, `DELETE /orders/:id`
 - Filtros combináveis: `number`, `status`, `startDate`, `endDate` (sobre
   `expectedDeliveryDate`), `page`, `limit`, `sortBy`, `order`
 - Paginação: `{ data, meta: { total, page, limit, totalPages } }`
-- Erros padronizados: `{ statusCode, error, message, details?, path, timestamp }`
-- Soft delete via `deletedAt` + extensão Prisma (`$extends` query extension) que filtra
-  `deletedAt: null` automaticamente
-- Regras de negócio: transições de status válidas (409), documento CPF/CNPJ válido,
-  `number` único, endereço obrigatório, itens com preço > 0, total derivado dos itens
-- Autorização por ownership + role admin
+- Erros padronizados: `{ statusCode, error, message, details?, path, timestamp, requestId? }`
+- Soft delete pela extensão do Prisma (Módulo 1) — `delete` marca `deleted_at`
+- Regras de negócio: total sempre calculado no servidor (o cliente não envia), transição de status
+  validada (inválida → 409), documento CPF/CNPJ com dígitos verificadores, preço em `Decimal(12,2)`
+  com no máximo 2 casas, data prevista `YYYY-MM-DD` e não no passado
+- Propriedade: usuário comum só acessa os próprios pedidos; `ADMIN` acessa todos. Pedido de outra
+  pessoa responde **404** (e não 403) — a API não confirma a existência do registro
+- `Decimal` serializado como `number` na resposta; data como `YYYY-MM-DD`
+- Exclusão: `204 No Content`
 
-**Aceite**: CRUD completo; filtros por número/status/período funcionam; pedido deletado
-retorna 404 e some das listagens; transição inválida retorna 409.
+**Aceite**: CRUD completo; filtros por número/status/período funcionam; paginação e ordenação
+funcionam; transição inválida → 409; pedido excluído responde 404 e some das listagens (mas
+continua na tabela); usuário alheio → 404; total calculado no servidor.
 
 ### Módulo 4 — Seed
 

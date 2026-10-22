@@ -2,10 +2,9 @@
 
 Web API da **naPorta** para gestão de pedidos de entrega, construída com NestJS, Prisma e PostgreSQL.
 
-> **Status do projeto:** Módulos 0, 1 e 2 concluídos — fundação, camada de dados e autenticação.
-> A base está pronta (configuração, ambiente validado, Docker, lint, testes, health checks), o
-> modelo de dados está criado e migrado no Postgres e a autenticação JWT já funciona. O CRUD
-> de pedidos (Módulo 3) vem a seguir.
+> **Status do projeto:** Módulos 0, 1, 2 e 3 concluídos — fundação, camada de dados,
+> autenticação e o CRUD de pedidos. A API já atende o escopo do desafio: pedidos com criação,
+> listagem filtrada, edição e exclusão lógica, protegidos por JWT.
 
 ---
 
@@ -220,6 +219,102 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 | **Entrada**                     | `ValidationPipe` global com `whitelist` e `forbidNonWhitelisted` — campo desconhecido é rejeitado com `422`.                                                                   |
 | **Segredos**                    | Segredos via `ConfigService` (nunca `process.env` espalhado); em produção, obrigatórios, distintos entre si e diferentes dos valores de desenvolvimento.                       |
 | **Transporte**                  | `helmet` com CSP/HSTS, CORS por whitelist e `trust proxy` para o rate limit funcionar atrás de proxy.                                                                          |
+
+---
+
+## Pedidos
+
+| Método   | Rota                 | Descrição                           |
+| -------- | -------------------- | ----------------------------------- |
+| `POST`   | `/api/v1/orders`     | Cria um pedido                      |
+| `GET`    | `/api/v1/orders`     | Lista pedidos (filtros + paginação) |
+| `GET`    | `/api/v1/orders/:id` | Detalha um pedido                   |
+| `PATCH`  | `/api/v1/orders/:id` | Atualiza um pedido                  |
+| `DELETE` | `/api/v1/orders/:id` | Exclui um pedido (exclusão lógica)  |
+
+```bash
+# Autentica e cria um pedido
+TOKEN=$(curl -s -X POST http://localhost:3000/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"maria@exemplo.com","password":"Senha1234"}' | jq -r .accessToken)
+
+curl -X POST http://localhost:3000/api/v1/orders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "expectedDeliveryDate": "2026-12-25",
+    "customerName": "Maria Silva",
+    "customerDocument": "11144477735",
+    "address": {
+      "street": "Rua das Flores", "number": "123", "complement": "Apto 42",
+      "neighborhood": "Centro", "city": "São Paulo", "state": "SP", "zipCode": "01001000"
+    },
+    "items": [
+      { "description": "Caixa de papelão", "quantity": 2, "unitPrice": 49.90 }
+    ]
+  }'
+```
+
+```jsonc
+{
+  "id": "4ed98c19-e7f6-4a42-ad27-e37a6670989a",
+  "number": "NP-2026-00001",
+  "status": "PENDING",
+  "expectedDeliveryDate": "2026-12-25",
+  "customer": { "name": "Maria Silva", "document": "11144477735" },
+  "address": { "street": "Rua das Flores", "number": "123", "state": "SP", "...": "..." },
+  "items": [
+    {
+      "id": "5c9bc17f-…",
+      "description": "Caixa de papelão",
+      "quantity": 2,
+      "unitPrice": 49.9,
+      "total": 99.8,
+    },
+  ],
+  "total": 99.8,
+  "createdBy": { "id": "ce589add-…", "name": "Maria" },
+  "createdAt": "2026-10-22T05:17:44.905Z",
+  "updatedAt": "2026-10-22T05:17:44.905Z",
+}
+```
+
+### Filtros e paginação
+
+`GET /api/v1/orders` aceita:
+
+| Parâmetro   | Exemplo         | Descrição                                                                          |
+| ----------- | --------------- | ---------------------------------------------------------------------------------- |
+| `number`    | `NP-2026-00001` | Número do pedido                                                                   |
+| `status`    | `PENDING`       | Status (`PENDING`, `CONFIRMED`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`) |
+| `startDate` | `2026-01-01`    | Início do período (data prevista de entrega)                                       |
+| `endDate`   | `2026-06-30`    | Fim do período                                                                     |
+| `page`      | `1`             | Página (padrão 1)                                                                  |
+| `limit`     | `20`            | Itens por página (padrão 20, máximo 100)                                           |
+| `sortBy`    | `createdAt`     | `createdAt`, `expectedDeliveryDate`, `total`, `number`, `status`                   |
+| `order`     | `desc`          | `asc` ou `desc`                                                                    |
+
+A resposta traz os dados e a metainformação da paginação:
+
+```jsonc
+{
+  "data": [/* ... */],
+  "meta": { "total": 42, "page": 1, "limit": 20, "totalPages": 3 },
+}
+```
+
+### Regras de negócio
+
+| Regra             | Comportamento                                                                                                                                                                       |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Total**         | Sempre calculado no servidor a partir dos itens — o cliente **não** envia total (campo desconhecido é rejeitado com `422`).                                                         |
+| **Preço**         | `Decimal(12,2)` no banco; aceito como número ou string, com no máximo 2 casas decimais (mais que isso é rejeitado, não arredondado).                                                |
+| **Documento**     | CPF/CNPJ validados pelos dígitos verificadores; gravado apenas com dígitos.                                                                                                         |
+| **Data prevista** | Formato `YYYY-MM-DD`, válida e não pode ser no passado.                                                                                                                             |
+| **Status**        | Fluxo `PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED`; `CANCELLED` é alcançável de qualquer etapa não terminal. Pular etapas ou voltar de um status final devolve **409**. |
+| **Número**        | `NP-AAAA-NNNNN`, sequencial por ano, gerado dentro da transação da criação.                                                                                                         |
+| **Exclusão**      | Lógica: a linha continua no banco, com `deleted_at` preenchido, e some das leituras.                                                                                                |
+| **Propriedade**   | Usuário comum só vê e altera os próprios pedidos; o `ADMIN` vê todos. Pedido de outra pessoa responde **404** (e não 403) — a API não confirma a existência do registro.            |
 
 ---
 

@@ -1,15 +1,17 @@
 import { Module } from '@nestjs/common';
 
 import { OrderNumberService } from './order-number.service.js';
+import { OrdersController } from './orders.controller.js';
+import { OrdersService } from './orders.service.js';
 
 /**
  * Módulo de pedidos.
  *
- * Neste módulo (Módulo 1 — Camada de dados) concentra-se apenas o serviço de
- * numeração. O CRUD, os filtros e as regras de negócio entram no Módulo 3.
+ * O CRUD, os filtros e as regras de negócio do pedido vivem aqui.
  */
 @Module({
-  providers: [OrderNumberService],
-  exports: [OrderNumberService],
+  controllers: [OrdersController],
+  providers: [OrdersService, OrderNumberService],
+  exports: [OrdersService, OrderNumberService],
 })
 export class OrdersModule {}
