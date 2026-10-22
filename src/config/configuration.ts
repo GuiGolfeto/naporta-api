@@ -1,5 +1,7 @@
 import { registerAs } from '@nestjs/config';
 
+import type { LogFormat } from './env.js';
+
 /**
  * Configurações tipadas, agrupadas por namespace.
  *
@@ -42,6 +44,12 @@ export const httpConfig = registerAs('http', () => ({
 
 export const loggerConfig = registerAs('logger', () => ({
   level: process.env.LOG_LEVEL ?? 'info',
+  /**
+   * `pretty` = log legível (desenvolvimento); `json` = log estruturado
+   * (produção). O padrão acompanha o `NODE_ENV`.
+   */
+  format: (process.env.LOG_FORMAT ??
+    (process.env.NODE_ENV === 'production' ? 'json' : 'pretty')) as LogFormat,
 }));
 
 export const configuration = [appConfig, databaseConfig, authConfig, httpConfig, loggerConfig];

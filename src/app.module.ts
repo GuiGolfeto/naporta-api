@@ -30,23 +30,25 @@ import { UsersModule } from './modules/users/users.module.js';
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const isProduction = configService.getOrThrow<string>('app.nodeEnv') === 'production';
+        const logFormat = configService.getOrThrow<string>('logger.format');
 
         return {
           pinoHttp: {
             level: configService.getOrThrow<string>('logger.level'),
-            // Em desenvolvimento o log é legível; em produção, JSON para o agregador.
-            transport: isProduction
-              ? undefined
-              : {
-                  target: 'pino-pretty',
-                  options: {
-                    singleLine: true,
-                    colorize: true,
-                    translateTime: 'SYS:standard',
-                    ignore: 'pid,hostname,reqId,res,responseTime,req',
-                  },
-                },
+            // `pretty` deixa o log legível (desenvolvimento); `json` é o
+            // formato estruturado para o agregador (produção).
+            transport:
+              logFormat === 'pretty'
+                ? {
+                    target: 'pino-pretty',
+                    options: {
+                      singleLine: true,
+                      colorize: true,
+                      translateTime: 'SYS:standard',
+                      ignore: 'pid,hostname,reqId,res,responseTime,req',
+                    },
+                  }
+                : undefined,
             redact: {
               paths: [
                 'req.headers.authorization',

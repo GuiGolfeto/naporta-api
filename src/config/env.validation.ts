@@ -55,6 +55,7 @@ export const envValidationSchema = Joi.object<ValidatedEnv>({
   LOG_LEVEL: Joi.string()
     .valid(...LOG_LEVELS)
     .default('info'),
+  LOG_FORMAT: Joi.string().valid('pretty', 'json').default('json'),
 }).unknown(true);
 
 /**

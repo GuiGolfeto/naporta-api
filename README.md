@@ -569,11 +569,68 @@ A seção completa de decisões e justificativas (com diagramas de arquitetura e
 
 ## Docker
 
-O Módulo 0 sobe apenas o banco. A imagem da API (multi-stage, usuário não-root, healthcheck) entra no **Módulo 6**.
+```bash
+# Stack completa (banco + migrations + API)
+docker compose up -d --build
+
+# Só o banco de desenvolvimento
+docker compose up -d db
+
+# Banco de testes e2e
+docker compose --profile test up -d db-test
+
+docker compose down        # remove os containers (o volume persiste)
+docker compose down -v     # remove também os volumes
+```
+
+| Serviço   | Papel                                                                 | Imagem               |
+| --------- | --------------------------------------------------------------------- | -------------------- |
+| `db`      | PostgreSQL 16 (dev)                                                   | `postgres:16-alpine` |
+| `db-test` | PostgreSQL 16 (testes, profile `test`)                                | `postgres:16-alpine` |
+| `migrate` | Aplica as migrations e **encerra** (`service_completed_successfully`) | estágio `build`      |
+| `api`     | A API                                                                 | estágio `runtime`    |
+
+### A imagem
+
+`Dockerfile` multi-stage, com quatro estágios:
+
+```
+deps  → npm ci (cacheável)
+build → prisma generate + nest build        ← usado pelo serviço `migrate`
+prod-deps → npm ci --omit=dev
+runtime → imagem final: só o necessário
+```
+
+| Propriedade      | Detalhe                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------- |
+| **Usuário**      | `node` (uid 1000) — sem privilégios (`USER node`)                                                    |
+| **PID 1**        | `tini`: encaminha o `SIGTERM` e recolhe processos zumbis                                             |
+| **Health check** | `HEALTHCHECK` no Dockerfile e no compose, usando o `fetch` nativo do Node (sem `curl` na imagem)     |
+| **Tamanho**      | **179 MB** (imagem final) — o CLI do Prisma, o Prisma Studio e os dev tools são removidos do runtime |
+| **Segredos**     | O `.env` **nunca** entra na imagem (`.dockerignore`); as variáveis chegam por `environment:`         |
+| **Logs**         | JSON no container (`LOG_FORMAT=json`), legível no desenvolvimento (`LOG_FORMAT=pretty`)              |
+| **Base**         | `node:24-bookworm-slim` (glibc) — o binário pré-compilado do argon2 é usado sem compilar nada        |
+
+### Migrations como serviço separado
+
+O CLI do Prisma não está na imagem final. As migrations rodam no serviço `migrate` (que usa o
+estágio `build`), e a API só sobe depois que ele termina com sucesso:
+
+```yaml
+api:
+  depends_on:
+    db: { condition: service_healthy }
+    migrate: { condition: service_completed_successfully }
+```
+
+### O banco nasce limpo
+
+> O serviço `migrate` executa **apenas** `prisma migrate deploy`. Nenhum seed roda
+> automaticamente — o banco é criado com o schema e **sem nenhum dado**.
+> A população é sempre por comando explícito (`npm run seed` / `npm run seed:api`).
+
+Para rodar a seed contra o banco do Docker (rodando na porta 5432 do host):
 
 ```bash
-docker compose up -d                    # banco de desenvolvimento
-docker compose --profile test up -d db-test   # banco de testes
-docker compose down                     # remove os containers (o volume persiste)
-docker compose down -v                  # remove também os volumes
+DATABASE_URL="postgresql://naporta:naporta_dev_password@localhost:5432/naporta" npm run seed
 ```

@@ -9,6 +9,9 @@ export type NodeEnv = 'development' | 'test' | 'production';
 
 export type LogLevel = 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
 
+/** Formato do log: legível (pretty) ou estruturado (json). */
+export type LogFormat = 'pretty' | 'json';
+
 export interface ValidatedEnv {
   NODE_ENV: NodeEnv;
   PORT: number;
@@ -27,6 +30,7 @@ export interface ValidatedEnv {
   AUTH_THROTTLE_TTL: number;
   AUTH_THROTTLE_LIMIT: number;
   LOG_LEVEL: LogLevel;
+  LOG_FORMAT: LogFormat;
 }
 
 /** Ambiente cru, ainda não validado (usado para checar o que foi explícito). */

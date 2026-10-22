@@ -1,0 +1,33 @@
+# Contexto de build do Docker — o que NÃO entra na imagem.
+#
+# O `.env` nunca é copiado: as variáveis chegam por `environment:` no compose
+# (ou pelo orquestrador em produção).
+
+# Dependências e artefatos de build
+node_modules
+dist
+coverage
+coverage-e2e
+*.tsbuildinfo
+
+# Segredos e ambiente local
+.env
+.env.*
+!.env.example
+
+# Versionamento e documentação
+.git
+.gitignore
+.github
+README.md
+ESCOPO.md
+.vscode
+.idea
+
+# Diversos
+*.log
+npm-debug.log*
+.DS_Store
+Dockerfile
+.dockerignore
+docker-compose.yml
